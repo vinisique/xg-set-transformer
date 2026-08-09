@@ -9,6 +9,7 @@ seções **Abordagem** e **Lições Aprendidas** do relatório final.
 | # | Decisão | Status | Data |
 |---|---|---|---|
 | [0001](0001-metrica-de-decisao.md) | Qual métrica decide se um modelo é melhor que outro | **proposta** — aguardando você | 2026-08-09 |
+| [0002](0002-contrato-de-persistencia.md) | O que conta como "tentei de verdade" antes de aceitar resultado negativo | **proposta** — aguardando você | 2026-08-09 |
 
 Status possíveis: `proposta` (aguardando sua resposta) · `aprovada` ·
 `rejeitada` · `revista por NNNN` (uma decisão posterior mudou esta).
