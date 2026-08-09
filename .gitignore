@@ -40,3 +40,16 @@ desktop.ini
 .DS_Store
 .vscode/
 .idea/
+
+# Template SBC bruto (zip extraido) — os arquivos necessarios ja estao
+# copiados em relatorio/ (sbc-template.sty e sbc.bst)
+modelosparapublicaodeartigos/
+
+# Artefatos de compilacao LaTeX
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.dvi
+*.synctex.gz
