@@ -63,6 +63,35 @@ Você responde de uma destas formas: **aprovo** / **aprovo com mudança X** /
 - Comparo o resultado com o critério de sucesso definido na Etapa 1 e digo
   claramente: bateu, não bateu, ou o critério estava mal formulado.
 
+### Etapa 3b — MOSTRAR (regra de evidência visual)
+
+> **Toda decisão tomada e todo resultado obtido — inclusive os parciais e os que
+> deram errado — vem acompanhado de evidência visual.**
+
+Uma tabela de números prova que algo foi medido; uma figura mostra o que aquilo
+significa. Um leitor que olha `+0,0014` não sente nada; um leitor que vê o
+segmento do último degrau quase desaparecer ao lado dos anteriores entende a
+conclusão antes de ler a frase.
+
+Regras práticas:
+
+- **Cada experimento gera figuras**, salvas em
+  `docs/experimentos/figuras/EXP-NNN-*.png` e **embutidas** no `RESULTS.md`. As
+  figuras são versionadas no git; os dados brutos que as geraram, não.
+- **As figuras são reproduzíveis**: saem de um script versionado que lê um
+  arquivo de métricas, nunca de edição manual. Toda figura traz um rodapé com o
+  ID do experimento e o arquivo que a originou.
+- **Estilo único** para o projeto inteiro, em `poc/viz.py`: paleta validada para
+  daltonismo (separação CVD ΔE ≥ 8), uma cor fixa por modelo em todas as
+  figuras, grade discreta, rótulos diretos nos valores.
+- **Resultado parcial também é mostrado.** Uma figura de um experimento
+  inconclusivo é evidência de que a investigação está em curso — e algumas das
+  figuras mais úteis do relatório vão ser exatamente essas.
+- **A figura não pode ser a única forma de ler o valor.** Todo número plotado
+  aparece também em tabela, para quem lê em preto e branco ou com leitor de tela.
+- **Olho a figura depois de gerar.** Validador de paleta não enxerga colisão de
+  rótulo nem eixo cortado; isso se pega abrindo a imagem.
+
 ---
 
 ## 3. Como eu falo com você

@@ -1,0 +1,20 @@
+{
+  "id": "EXP-000",
+  "data": "2026-08-09",
+  "script": "poc/poc3_xg3.py",
+  "dados": "poc/shots_all.npz",
+  "n_chutes": 99746,
+  "n_partidas": 3961,
+  "taxa_gol": 0.1026,
+  "split": {"treino": 69756, "validacao": 15055, "teste": 14935, "criterio": "por partida", "seed": 0},
+  "selecao_de_modelo": "AUC de validacao (early stopping, paciencia 8)",
+  "seeds": [0, 1],
+  "modelos": {
+    "B1": {"nome": "LR (distancia, angulo, cabeceio)", "auc": 0.7653, "logloss": 0.2887, "auc_dp": null, "logloss_dp": null},
+    "B2": {"nome": "LR + interacao manual", "auc": 0.7961, "logloss": 0.2739, "auc_dp": null, "logloss_dp": null},
+    "DS": {"nome": "Deep Sets (sem atencao)", "auc": 0.8144, "logloss": 0.2659, "auc_dp": 0.0000, "logloss_dp": 0.0001},
+    "TF": {"nome": "Transformer (com atencao)", "auc": 0.8158, "logloss": 0.2650, "auc_dp": 0.0006, "logloss_dp": 0.0000}
+  },
+  "ordem_escada": ["B1", "B2", "DS", "TF"],
+  "observacao": "Marco zero. Sem Brier, sem calibracao e sem teste estatistico — lacunas apontadas no feedback do professor e endereçadas a partir do EXP-001."
+}

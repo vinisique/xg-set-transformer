@@ -47,6 +47,17 @@ Convenções:
 
 Modelos neurais: média ± desvio sobre as seeds 0 e 1.
 
+### Evidência visual
+
+![Escada de baselines do EXP-000](figuras/EXP-000-escada.png)
+
+*Figura gerada por `poc/fig_escada.py` a partir de `EXP-000-metricas.json`.
+Cada segmento é o ganho daquele degrau sobre o anterior — a forma foi escolhida
+para que o incremento seja o que o olho vê primeiro, já que é ele que responde à
+pergunta do projeto. Pontos em vez de barras porque as AUCs vivem entre 0,76 e
+0,82: barras desde a origem esconderiam as diferenças, e barras truncadas
+mentiriam sobre a proporção.*
+
 ## Leitura
 
 **1. A escala resolveu o problema que a proposta apontava.** Na PoC com 6.347
