@@ -1,0 +1,42 @@
+# Ambiente virtual — nunca versionar (contém o PyTorch inteiro, ~2 GB)
+poc/.venv/
+.venv/
+venv/
+
+# Dados brutos e derivados — pesados e reconstrutíveis pelos scripts de download
+*.npz
+*.sqlite
+poc/data/
+
+# Saídas de experimentos: os artefatos ficam fora do git,
+# mas docs/experimentos/RESULTS.md (o log com os números) é versionado.
+experiments/
+*.pt
+*.pth
+*.ckpt
+
+# Material de terceiros — NÃO vai para o repositório PÚBLICO.
+# Slides, notebooks e enunciado são de autoria do Prof. Ronaldo Prati / UFABC, e o
+# texto do feedback são palavras dele. Republicar num repositório público seria
+# redistribuir material de terceiros sem permissão.
+# Tudo continua normalmente no seu disco — apenas fora do git.
+# Com autorização do professor, basta remover as linhas abaixo.
+aulas/
+project-assignment.pdf
+feedback_proposta_entrega1.md
+
+# Config local do editor/ferramenta — não interessa a quem clona
+.claude/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+
+# Sistema operacional / editores
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
