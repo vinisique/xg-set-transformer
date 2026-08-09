@@ -87,6 +87,70 @@ já está codificada nas features relativas de cada token (projeção na linha d
 chute, distância perpendicular, dentro do triângulo do gol), e a atenção não tem
 o que acrescentar.
 
+---
+
+## EXP-000b — reexecução com previsões salvas, Brier e calibração
+
+- **Data:** 2026-08-09 · **Script:** `poc/exp000_evidencia.py` · **Figuras:** `poc/fig_exp000.py`
+- **Por quê:** o `poc3_xg3.py` descartava as previsões. Sem elas não há curva de
+  calibração, nem Brier, nem teste pareado — só os quatro números finais.
+- **Previsões salvas:** `experiments/EXP-000/predicoes.npz` (fora do git).
+
+**Resultado [medido]:**
+
+| Modelo | AUC | Log loss | **Brier** | ECE |
+|---|---|---|---|---|
+| B1 | 0,7653 | 0,2887 | 0,08237 | 0,0076 |
+| B2 | 0,7961 | 0,2739 | 0,07846 | **0,0035** |
+| DS | 0,8149 | 0,2655 | 0,07643 | 0,0082 |
+| TF | **0,8169** | **0,2644** | **0,07609** | 0,0064 |
+
+> **Nota de comparabilidade:** aqui as previsões das duas sementes são
+> **combinadas** (média das probabilidades) e as métricas calculadas sobre o
+> conjunto; no EXP-000 original a média era das *métricas*. Combinar previsões é
+> melhor, e é por isso que a AUC do DS sobe de 0,8144 para 0,8149. As duas
+> tabelas **não são comparáveis linha a linha**; os valores por semente, sim, e
+> esses batem exatamente.
+
+### Evidência visual
+
+![Calibração e Brier](figuras/EXP-000-calibracao.png)
+
+![Desempenho por semente](figuras/EXP-000-seeds.png)
+
+## Leitura do EXP-000b
+
+**1. Correção de uma leitura anterior minha.** Ao ver `+0,0014` de AUC e um desvio
+de `±0,0006` entre sementes, eu afirmei que o ganho da atenção estava "da ordem do
+ruído". **Isso estava errado**, e os valores por semente mostram por quê:
+
+| | semente 0 | semente 1 | faixa |
+|---|---|---|---|
+| DS — AUC | 0,81439 | 0,81431 | 0,81431 – 0,81439 |
+| TF — AUC | 0,81518 | 0,81637 | 0,81518 – 0,81637 |
+
+As faixas **não se sobrepõem**: a pior rodada do Transformer é melhor que a melhor
+rodada do Deep Sets, em AUC e em Brier. Com 2 sementes isso é **indício, não
+conclusão** — mas é um indício na direção oposta à que eu havia descrito. A
+primeira versão da figura chegou a levar o título "o ganho da atenção é da ordem
+do ruído entre seeds", afirmando o contrário do que os próprios dados mostravam;
+foi corrigida.
+
+**2. O achado mais interessante está no ECE, e não no Brier.** Repare que o
+**B2 é o modelo mais bem calibrado de todos** (ECE 0,0035), apesar de ter o
+segundo pior Brier. Os modelos neurais têm Brier melhor e calibração **pior**.
+
+Isso não é contradição: o Brier se decompõe em *calibração* (as probabilidades
+batem com a realidade?) e *refinamento* (o modelo separa bem os casos?). Os
+modelos neurais ganham no refinamento e perdem na calibração; o saldo é positivo,
+por isso o Brier melhor.
+
+**A consequência prática é direta:** existe ganho fácil disponível. Se
+recalibrarmos DS e TF — que é exatamente a tentativa **T1** do cartão `0002` e o
+pedido nº 1 do professor — o Brier deve melhorar sem tocar na arquitetura. Uma
+regressão logística simples está entregando calibração melhor que um Transformer,
+e isso é um parágrafo forte para a análise crítica.
+
 ## Limitações deste experimento
 
 - Apenas **2 seeds** — insuficiente para afirmar qualquer coisa sobre a diferença
