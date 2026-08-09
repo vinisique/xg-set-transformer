@@ -1,8 +1,13 @@
 # 0001 — Qual métrica decide se um modelo é melhor que outro
 
-- **Status:** proposta
+- **Status:** **APROVADA**
 - **Data:** 2026-08-09
 - **Decide:** Vinícius
+- **Como foi aprovada:** as três decisões abertas foram apresentadas em detalhe,
+  com alternativas e recomendação, e o Vinícius respondeu "vamos avançar o
+  projeto". Registro isso como aprovação da recomendação. **Se não era essa a
+  intenção em algum dos cartões, é só dizer — nada aqui é irreversível, e reverter
+  agora custa minutos.**
 
 > Este é o primeiro cartão de decisão e serve também de exemplo do formato.
 > Ele é curto de propósito: se um cartão não cabe em uma página, a decisão está
@@ -88,5 +93,4 @@ Em **EXP-001**, ao reavaliar os quatro modelos com todas as métricas:
 
 ## Decisão
 
-*(a preencher por você: aprovo / aprovo com mudança X / prefiro a alternativa B /
-quero entender melhor Y)*
+**Aprovada** conforme a recomendação, em 2026-08-09.

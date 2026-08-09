@@ -1,8 +1,13 @@
 # 0002 — O que conta como "tentei de verdade" antes de aceitar o resultado negativo
 
-- **Status:** proposta
+- **Status:** **APROVADA**
 - **Data:** 2026-08-09
 - **Decide:** Vinícius
+- **Como foi aprovada:** as três decisões abertas foram apresentadas em detalhe,
+  com alternativas e recomendação, e o Vinícius respondeu "vamos avançar o
+  projeto". Registro isso como aprovação da recomendação. **Se não era essa a
+  intenção em algum dos cartões, é só dizer — nada aqui é irreversível, e reverter
+  agora custa minutos.**
 
 ## Contexto
 
@@ -82,5 +87,4 @@ Lições Aprendidas pronta.
 
 ## Decisão
 
-*(a preencher por você: aprovo / aprovo com N diferente / mudo a ordem das
-tentativas / quero entender melhor alguma hipótese)*
+**Aprovada** conforme a recomendação (N = 4), em 2026-08-09.
