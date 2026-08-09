@@ -225,3 +225,76 @@ A medição válida é o **EXP-004b**, com a tolerância corrigida.
 > **Para o relatório:** este é material da seção Lições Aprendidas. Trocar a
 > métrica de seleção sem reescalar a tolerância é um erro sutil, plausível e
 > que se manifesta como resultado pior no exato critério que se queria melhorar.
+
+---
+
+## EXP-004b — A RESPOSTA À PERGUNTA CENTRAL
+
+- **Data:** 2026-08-09 · **Script:** `poc/exp004_tf_vs_ds.py` · **Figuras:** `poc/fig_exp004.py`
+- **Protocolo:** 5 sementes por modelo, seleção por Brier de validação com
+  **tolerância relativa**, split por partida, teste = 14.935 chutes em 595 partidas.
+- **Pergunta:** a atenção par a par acrescenta algo sobre o Deep Sets? Os dois
+  recebem exatamente os mesmos tokens; só o Transformer compara jogadores entre si.
+
+### Resultado por semente [medido]
+
+| | Brier (média ± dp) | AUC (média ± dp) |
+|---|---|---|
+| DS — Deep Sets | 0,07655 ± 0,00007 | **0,8146** ± 0,0007 |
+| TF — Transformer | **0,07624** ± 0,00005 | 0,8141 ± 0,0009 |
+
+### Resultado do conjunto das 5 sementes (média das probabilidades)
+
+| | Brier | AUC | Log loss | ECE |
+|---|---|---|---|---|
+| DS | 0,07635 | 0,8160 | 0,2651 | 0,0070 |
+| TF | **0,07579** | 0,8162 | **0,2639** | **0,0043** |
+
+### Teste pareado — bootstrap agrupado por partida, 2.000 reamostras
+
+| Métrica | Diferença (TF − DS) | IC 95% | p | Veredito |
+|---|---|---|---|---|
+| **Brier** | **−0,00056** | [−0,00081; −0,00031] | < 0,001 | **estabelecida** |
+| AUC | +0,00024 | [−0,00148; +0,00199] | 0,797 | não estabelecida |
+
+### Evidência visual
+
+![Desempenho por semente](figuras/EXP-004-seeds.png)
+
+![Distribuição bootstrap da diferença](figuras/EXP-004-bootstrap.png)
+
+## A resposta
+
+> **A atenção par a par melhora a qualidade da probabilidade, mas não a
+> capacidade de ordenar os chutes.**
+
+Em Brier — a métrica que decide, por ser xG uma probabilidade — a vantagem do
+Transformer é **estatisticamente estabelecida**: a distribuição bootstrap inteira
+fica à esquerda de zero, sem nenhuma reamostra cruzando. Em AUC, a diferença é
+indistinguível de zero (p = 0,797), e a média por semente até favorece
+ligeiramente o Deep Sets.
+
+**O mecanismo aparece no ECE:** 0,0043 do Transformer contra 0,0070 do Deep Sets.
+A atenção não descobre *quais* chutes são mais perigosos — a informação por
+jogador já bastava para isso. Ela acerta melhor *quanto* perigosos são, e é
+exatamente essa a dimensão que um modelo de xG precisa entregar.
+
+## Por que este resultado justifica o método
+
+A versão original do código reportava **apenas AUC**. Sob aquela métrica, a
+conclusão teria sido *"o Transformer é ligeiramente pior que o Deep Sets; a
+atenção não serve"* — e o projeto encerraria com um resultado negativo **falso**.
+
+Foi o cartão `0001`, que adotou o Brier seguindo o feedback do professor, que
+tornou o efeito visível. **Uma decisão de método mudou a conclusão científica.**
+
+## Limitações
+
+- A diferença é pequena em termos absolutos (0,00056 de Brier). É consistente e
+  estatisticamente estabelecida, mas o ganho prático precisa ser discutido, não
+  apenas declarado significativo.
+- A vantagem foi medida com seleção por Brier. O `0001b` (a fazer) precisa
+  verificar se ela sobrevive à seleção por AUC — hoje há indício de que o
+  critério de parada afeta o Transformer bem mais que o Deep Sets.
+- Nada aqui explica **o que** a atenção está usando. Isso é o EXP-005, com os
+  mapas de atenção.
