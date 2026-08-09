@@ -202,10 +202,21 @@ class Former(nn.Module):
         return self.head(self.tf(h, src_key_padding_mask=p)[:, 0]).squeeze(-1)
 
 
-def treina(model, D, seed, criterio="brier", epocas=60, paciencia=8, batch=256):
+def treina(model, D, seed, criterio="brier", epocas=60, paciencia=8, batch=256,
+           tol_rel=1e-4):
     """Treina e devolve as previsoes de TESTE do melhor estado de validacao.
 
     criterio: 'brier' (cartao 0001) ou 'auc' (protocolo antigo do EXP-000).
+
+    tol_rel: melhora minima para reiniciar a paciencia, RELATIVA a escala da
+    metrica (`tol_rel * |melhor|`). Tolerancia absoluta nao serve aqui porque as
+    duas metricas vivem em escalas diferentes: AUC perto de 0,81 e Brier perto
+    de 0,076. No EXP-004 isso custou caro — um limiar absoluto de 1e-6 sobre o
+    Brier era, em termos relativos, dez vezes mais apertado que o 1e-4 usado
+    sobre a AUC. Quase toda flutuacao contava como melhora, a paciencia nunca
+    disparava, o treino ia ate a ultima epoca e selecionava um estado ja
+    sobreajustado — produzindo Brier PIOR justamente no criterio que deveria
+    otimiza-lo.
     """
     X = torch.tensor(D["tok"]); PAD = torch.tensor(D["pad"])
     Y = torch.tensor(D["goal"], dtype=torch.float32)
@@ -235,7 +246,7 @@ def treina(model, D, seed, criterio="brier", epocas=60, paciencia=8, batch=256):
         # Brier: menor e melhor -> usamos o negativo para "maior e melhor"
         score = (-brier(y_va, 1 / (1 + np.exp(-saida))) if criterio == "brier"
                  else roc_auc_score(y_va, saida))
-        if melhor is None or score > melhor + 1e-6:
+        if melhor is None or score > melhor + tol_rel * abs(melhor):
             melhor, espera = score, 0
             estado = {k: v.clone() for k, v in model.state_dict().items()}
         else:

@@ -42,22 +42,46 @@ print(f"teste: {len(y_te)} chutes | {len(np.unique(partidas_te))} partidas | "
       f"{y_te.mean()*100:.1f}% gols")
 
 # ------------------------------------------------------------- treinos ----
+# Cada semente e salva EM DISCO assim que termina, e uma ja salva nao e
+# retreinada. A primeira versao deste script so gravava no fim: quando o
+# processo foi interrompido na ultima semente, 100 minutos de CPU viraram nada.
+CACHE = os.path.join(DIR_EXP, "predicoes.npz")
+
+
+def carrega_cache():
+    if os.path.exists(CACHE):
+        d = np.load(CACHE)
+        return {k: d[k] for k in d.files}
+    return {}
+
+
+guardado = carrega_cache()
+if guardado:
+    print(f"cache encontrado com {len([k for k in guardado if 'seed' in k])} "
+          f"sementes ja treinadas — nao serao refeitas")
+
 preds = {"DS": [], "TF": []}
 for chave, classe in (("DS", xb.DeepSets), ("TF", xb.Former)):
     for s in SEEDS:
-        t0 = time.time()
-        p = xb.treina(classe(), D, s, criterio="brier")
+        nome = f"{chave}_seed{s}"
+        if nome in guardado:
+            p = guardado[nome]
+            print(f"  {chave} seed {s}: (do cache)", flush=True)
+        else:
+            t0 = time.time()
+            p = xb.treina(classe(), D, s, criterio="brier")
+            m = xb.metricas(y_te, p)
+            print(f"  {chave} seed {s}: Brier={m['brier']:.5f}  AUC={m['auc']:.4f}  "
+                  f"({time.time()-t0:.0f}s)", flush=True)
+            guardado[nome] = p
+            guardado["y"] = y_te
+            guardado["partidas"] = partidas_te
+            np.savez_compressed(CACHE, **guardado)   # <- salva a cada semente
         preds[chave].append(p)
-        m = xb.metricas(y_te, p)
-        print(f"  {chave} seed {s}: Brier={m['brier']:.5f}  AUC={m['auc']:.4f}  "
-              f"({time.time()-t0:.0f}s)", flush=True)
 
 ens = {k: np.mean(v, axis=0) for k, v in preds.items()}
-np.savez_compressed(os.path.join(DIR_EXP, "predicoes.npz"), y=y_te,
-                    partidas=partidas_te,
-                    **{f"{k}_seed{s}": p for k, ps in preds.items()
-                       for s, p in zip(SEEDS, ps)},
-                    **{f"{k}_ensemble": v for k, v in ens.items()})
+guardado.update({f"{k}_ensemble": v for k, v in ens.items()})
+np.savez_compressed(CACHE, **guardado)
 
 # ------------------------------------------------------ teste estatistico ----
 print("\nbootstrap pareado agrupado por partida (2000 reamostras)...")

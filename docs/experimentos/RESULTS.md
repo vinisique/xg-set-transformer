@@ -163,3 +163,65 @@ e isso é um parágrafo forte para a análise crítica.
 
 Este experimento é o marco zero. Nada dele entra no relatório como conclusão;
 entra como ponto de partida.
+
+---
+
+## EXP-004 (primeira tentativa) — INTERROMPIDO, e o que ele revelou
+
+- **Data:** 2026-08-09 · **Script:** `poc/exp004_tf_vs_ds.py`
+- **Desfecho:** o processo foi interrompido durante a 10ª de 10 rodadas. A
+  versão do script só gravava no fim, então **as previsões de 9 rodadas
+  (~100 minutos de CPU) foram perdidas**. Restaram apenas as métricas impressas
+  no log, abaixo.
+
+**Métricas por semente [medido]** (parada por Brier, tolerância absoluta 1e-6):
+
+| Semente | DS · Brier | DS · AUC | DS · tempo | TF · Brier | TF · AUC | TF · tempo |
+|---|---|---|---|---|---|---|
+| 0 | 0,07653 | 0,8144 | 162 s | 0,07646 | 0,8117 | 1078 s |
+| 1 | 0,07653 | 0,8143 | 137 s | 0,07637 | 0,8156 | 1091 s |
+| 2 | 0,07657 | 0,8147 | 110 s | 0,07682 | 0,8134 | 430 s |
+| 3 | 0,07666 | 0,8139 | 993 s | 0,07647 | 0,8143 | 2393 s |
+| 4 | 0,07644 | 0,8158 | 182 s | — | — | interrompida |
+
+Médias: **DS 0,076546 · TF 0,076530** — diferença de 0,000016, ruído puro.
+
+### Duas falhas minhas, ambas registradas
+
+**1. Tolerância do early stopping não foi reescalada junto com a métrica.**
+O cartão `0001` trocou o critério de seleção de AUC para Brier. Mantive o limiar
+de melhora em `1e-6` absoluto. Como AUC vive perto de 0,81 e Brier perto de
+0,076, o mesmo número absoluto ficou **relativamente 10× mais apertado**: quase
+toda flutuação contava como melhora, a paciência nunca disparava, o treino ia até
+a última época e selecionava um estado já sobreajustado.
+
+A evidência é direta — o mesmo modelo, nos dois protocolos:
+
+| Transformer | Brier |
+|---|---|
+| EXP-000, parada por **AUC** | 0,07627 (ambas as sementes) |
+| EXP-004, parada por **Brier** | 0,07637 a 0,07682 |
+
+**O critério que deveria otimizar o Brier produziu Brier pior.** Também explica os
+tempos anômalos (2.393 s numa semente contra 430 s em outra).
+
+*Correção:* tolerância passa a ser **relativa** (`tol_rel * |melhor|`, com
+`tol_rel = 1e-4`), de modo que as duas métricas se comportem de forma equivalente
+em termos relativos.
+
+**2. O script só salvava no fim.** Uma interrupção na última rodada apagou todas
+as anteriores. *Correção:* cada semente é gravada em disco assim que termina, e
+uma semente já salva não é retreinada — a reexecução aproveita o que existir.
+
+### Por que este experimento não vale como resposta
+
+A comparação era **internamente justa** (mesma regra para os dois modelos), mas
+ambos estavam prejudicados pela mesma regra ruim. Um handicap comum pode mascarar
+uma diferença real. Concluir "a atenção não acrescenta nada" a partir daqui seria
+dar uma resposta errada com confiança.
+
+A medição válida é o **EXP-004b**, com a tolerância corrigida.
+
+> **Para o relatório:** este é material da seção Lições Aprendidas. Trocar a
+> métrica de seleção sem reescalar a tolerância é um erro sutil, plausível e
+> que se manifesta como resultado pior no exato critério que se queria melhorar.
