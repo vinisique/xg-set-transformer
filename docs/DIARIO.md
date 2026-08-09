@@ -67,6 +67,27 @@ commits.
   professor; publicá-los seria redistribuir material de outra pessoa. Continuam
   no disco, apenas fora do git. Reversível removendo as linhas do `.gitignore`.
 
+### EXP-000 concluído (mesma data)
+
+Resultado completo em `experimentos/RESULTS.md`. Em uma frase: **em escala, os
+modelos neurais superam o baseline manual — mas a atenção acrescenta quase nada
+sobre Deep Sets.**
+
+| Modelo | AUC | Log loss |
+|---|---|---|
+| B1 | 0,7653 | 0,2887 |
+| B2 | 0,7961 | 0,2739 |
+| Deep Sets | 0,8144 | 0,2659 |
+| Transformer | 0,8158 | 0,2650 |
+
+Isso reposiciona o projeto. O medo registrado na proposta ("os neurais ficam em
+~0,71, abaixo do B2") **desapareceu com a escala** — era falta de dado, não de
+arquitetura. Em compensação, a pergunta central ficou mais afiada e mais difícil:
+o ganho de +0,0183 do B2 para Deep Sets mostra que a representação por token vale
+muito, enquanto os +0,0014 de Deep Sets para Transformer sugerem que a **atenção
+par a par** pode não estar acrescentando nada. Sem teste estatístico, porém, esse
+número não sustenta afirmação nenhuma.
+
 ### Pendente para a próxima sessão
 
 - Você criar o repositório público no GitHub e dar `push` (precisa da sua conta).
