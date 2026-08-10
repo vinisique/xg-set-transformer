@@ -87,6 +87,21 @@ dispensável. Se for negativa, isso indica que a informação relevante está
 \emph{por jogador} e não \emph{entre jogadores} -- um resultado que contraria a
 intuição de que futebol é um jogo de interações.
 
+\subsection{Trabalhos relacionados}
+
+Modelos de xG baseados em atributos do chute e em atributos manuais de interação
+estão bem estabelecidos~\cite{rathke2017examination,anzer2021goal,mead2023expected,iapteff2025interpretable},
+e Robberechts e Davis~\cite{robberechts2020data} mostram como o volume de dados necessário
+cresce com a complexidade do modelo. O uso de aprendizado profundo sobre as
+posições de todos os jogadores também já foi explorado: Wang et al.~\cite{wang2024tacticai}
+aplicam aprendizado geométrico sobre um grafo de jogadores em escanteios, e
+Fern{\'a}ndez et al.~\cite{fernandez2021framework} avaliam o valor instantâneo da posse com redes
+profundas sobre dados de rastreamento.
+
+Não foi localizado, contudo, trabalho revisado por pares que aplique
+\emph{self-attention} sobre \emph{freeze-frames} tratando cada jogador como um
+token para a estimativa de xG. É essa a lacuna que este trabalho explora.
+
 \subsection{Definição formal}
 
 Cada finalização é um par (cena, desfecho). A cena é um \textbf{conjunto} de até
@@ -108,7 +123,7 @@ sequenciais e justifica a ausência de \emph{positional encoding}
 Utilizamos a StatsBomb Open Data~\cite{statsbomb}, base pública sob licença de uso
 não comercial com atribuição. Para cada finalização, a base registra o \emph{freeze-frame}: as
 coordenadas $(x,y)$ de todos os jogadores visíveis no instante do chute, com
-seus papéis (companheiro, adversário, goleiro) e o desfecho do lance. Após
+seus papéis (companheiro, adversário, goleiro) e o desfecho do lance~\cite{statsbomb2021freezeframes}. Após
 excluir pênaltis e lances sem \emph{freeze-frame}, restam 99.746 finalizações de
 3.961 partidas em 80 competições-temporada, com taxa de gol de 10,26\%.
 
@@ -117,7 +132,7 @@ excluir pênaltis e lances sem \emph{freeze-frame}, restam 99.746 finalizações
 \begin{itemize}
   \item O \emph{freeze-frame} fornece \textbf{posição, mas não velocidade nem
         direção}. Um defensor parado e outro em corrida de recuperação são
-        indistinguíveis para o modelo.
+        indistinguíveis para o modelo. A velocidade do chutador é atributo usado na literatura que dispõe de rastreamento~\cite{anzer2021goal,lucey2015quality}, e está fora de alcance aqui.
   \item \textbf{30,7\% das finalizações vêm de competições femininas} e cerca de
         37\% de apenas quatro temporadas 2015/16 de ligas europeias. As taxas de
         gol dos dois grupos são praticamente iguais (10,4\% contra 10,2\%), o que
@@ -172,6 +187,33 @@ TF & Transformer sobre os mesmos tokens & interação \textbf{aprendida} \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\textbf{Os atributos do \emph{baseline} B2 replicam a literatura de xG.} A
+distância e o ângulo de visão da baliza são os dois preditores clássicos, e sua
+combinação estima xG melhor do que cada um isoladamente~\cite{rathke2017examination}.
+A parte do corpo aparece em praticamente todos os modelos
+recentes~\cite{anzer2021goal,mead2023expected}. Os atributos de interação --
+distância do goleiro ao gol, se o goleiro está na linha do chute, número de
+defensores na trajetória e distância ao adversário mais próximo -- são os mesmos
+adotados por Anzer e Bauer~\cite{anzer2021goal} sobre dados posicionais sincronizados e
+por Iapteff et al.~\cite{iapteff2025interpretable} sobre dados abertos da StatsBomb.
+
+O paralelo com este último é direto: Iapteff et al.~\cite{iapteff2025interpretable}
+selecionaram, por seleção sequencial, exatamente \textbf{sete} atributos, e o
+conjunto obtido coincide quase termo a termo com o do B2. Uma diferença é que a
+posição relativa do goleiro é aqui codificada de forma \emph{contínua} (o desvio
+perpendicular em relação à linha chutador--gol), enquanto aquele trabalho usa um
+indicador binário -- uma generalização do atributo consagrado.
+
+Três atributos da literatura ficaram \textbf{de fora} do B2, e a omissão é
+declarada: o \emph{padrão de jogo} (bola rolando, escanteio, falta), o
+\emph{tipo de ação anterior} e o ``melhor ângulo'' livre de
+obstrução~\cite{iapteff2025interpretable,mead2023expected,lucey2015quality}.
+Pênaltis foram excluídos da base, o que remove a principal fonte de
+heterogeneidade de situação. Como o B2 é um \emph{baseline} de comparação e não a
+contribuição do trabalho, optou-se por mantê-lo alinhado ao conjunto de atributos
+puramente geométricos, que é o mesmo espaço de informação disponível aos modelos
+neurais -- caso contrário a comparação deixaria de ser justa.
 
 A comparação decisiva na Tabela~\ref{tab:escada} é \textbf{TF contra DS}:
 ambos recebem exatamente os mesmos

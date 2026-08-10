@@ -1,13 +1,17 @@
 % =====================================================================
 %  Referencias do relatorio final.
 %
-%  REGRA: so entra aqui referencia que foi CONFERIDA. Citacao inventada
-%  e o erro mais caro possivel num trabalho academico — e o mais facil
-%  de detectar por quem avalia.
+%  REGRA: so entra aqui referencia CONFERIDA na fonte primaria. Citacao
+%  inventada e o erro mais caro possivel num trabalho academico — e o
+%  mais facil de detectar por quem avalia.
 %
-%  As entradas abaixo sao de trabalhos amplamente conhecidos. Ainda
-%  assim, CONFIRA paginas e volumes antes da entrega.
+%  As entradas abaixo tiveram autores, titulo, ano e veiculo verificados.
+%  Ressalvas conhecidas estao anotadas junto de cada uma.
 % =====================================================================
+
+% ---------------------------------------------------------------------
+% Arquitetura e fundamentos
+% ---------------------------------------------------------------------
 
 @inproceedings{vaswani2017,
   title     = {Attention Is All You Need},
@@ -36,6 +40,10 @@
   year      = {2019}
 }
 
+% ---------------------------------------------------------------------
+% Avaliacao de previsoes probabilisticas
+% ---------------------------------------------------------------------
+
 @article{brier1950,
   title   = {Verification of Forecasts Expressed in Terms of Probability},
   author  = {Brier, Glenn W.},
@@ -53,6 +61,113 @@
   year      = {2005}
 }
 
+% ---------------------------------------------------------------------
+% Modelagem de Expected Goals
+% ---------------------------------------------------------------------
+
+@article{iapteff2025interpretable,
+  author  = {Iapteff, Lo{\"i}c and Le Coz, Sebastian and Rioland, Maxime and
+             Houde, Titouan and Carling, Christopher and Imbach, Frank},
+  title   = {Toward interpretable expected goals modeling using {B}ayesian
+             mixed models},
+  journal = {Frontiers in Sports and Active Living},
+  volume  = {7},
+  pages   = {1504362},
+  year    = {2025},
+  doi     = {10.3389/fspor.2025.1504362}
+}
+
+@article{anzer2021goal,
+  author  = {Anzer, Gabriel and Bauer, Pascal},
+  title   = {A Goal Scoring Probability Model for Shots Based on Synchronized
+             Positional and Event Data in Football (Soccer)},
+  journal = {Frontiers in Sports and Active Living},
+  volume  = {3},
+  pages   = {624475},
+  year    = {2021},
+  doi     = {10.3389/fspor.2021.624475}
+}
+
+@article{mead2023expected,
+  author  = {Mead, James and O'Hare, Anthony and McMenemy, Paul},
+  title   = {Expected goals in football: Improving model performance and
+             demonstrating value},
+  journal = {PLOS ONE},
+  volume  = {18},
+  number  = {4},
+  pages   = {e0282295},
+  year    = {2023},
+  doi     = {10.1371/journal.pone.0282295}
+}
+
+@article{rathke2017examination,
+  author  = {Rathke, Alex},
+  title   = {An examination of expected goals and shot efficiency in soccer},
+  journal = {Journal of Human Sport and Exercise},
+  volume  = {12},
+  number  = {Proc2},
+  year    = {2017},
+  doi     = {10.14198/jhse.2017.12.proc2.05}
+}
+
+@inproceedings{lucey2015quality,
+  author    = {Lucey, Patrick and Bialkowski, Alina and Monfort, Mathew and
+               Carr, Peter and Matthews, Iain},
+  title     = {{``Quality vs Quantity''}: Improved Shot Prediction in Soccer
+               using Strategic Features from Spatiotemporal Data},
+  booktitle = {Proceedings of the 9th Annual MIT Sloan Sports Analytics
+               Conference},
+  year      = {2015}
+}
+
+% Ressalva: ano 2015 confirmado na pagina oficial do MIT SSAC e no PDF
+% hospedado pela Disney Research; uma fonte terciaria cita 2014.
+
+@inproceedings{robberechts2020data,
+  author    = {Robberechts, Pieter and Davis, Jesse},
+  title     = {How Data Availability Affects the Ability to Learn Good
+               {xG} Models},
+  booktitle = {Machine Learning and Data Mining for Sports Analytics (MLSA)},
+  series    = {Communications in Computer and Information Science},
+  pages     = {17--27},
+  publisher = {Springer},
+  year      = {2020},
+  doi       = {10.1007/978-3-030-64912-8_2}
+}
+
+% ---------------------------------------------------------------------
+% Aprendizado profundo sobre posicoes de jogadores
+% ---------------------------------------------------------------------
+
+@article{wang2024tacticai,
+  author  = {Wang, Zhe and Veli{\v{c}}kovi{\'c}, Petar and Hennes, Daniel and
+             Toma{\v{s}}ev, Nenad and Prince, Laurel and Kaisers, Michael and
+             Bachrach, Yoram and Elie, Romuald},
+  title   = {{TacticAI}: an {AI} assistant for football tactics},
+  journal = {Nature Communications},
+  volume  = {15},
+  number  = {1},
+  pages   = {1906},
+  year    = {2024},
+  doi     = {10.1038/s41467-024-45965-x}
+}
+
+@article{fernandez2021framework,
+  author  = {Fern{\'a}ndez, Javier and Bornn, Luke and Cervone, Daniel},
+  title   = {A framework for the fine-grained evaluation of the instantaneous
+             expected value of soccer possessions},
+  journal = {Machine Learning},
+  volume  = {110},
+  number  = {6},
+  pages   = {1389--1427},
+  year    = {2021},
+  doi     = {10.1007/s10994-021-05989-6}
+}
+
+% ---------------------------------------------------------------------
+% Dados
+% ---------------------------------------------------------------------
+
 @misc{statsbomb,
   title        = {StatsBomb Open Data},
   author       = {{StatsBomb}},
@@ -61,11 +176,19 @@
   year         = {2026}
 }
 
-% ---------------------------------------------------------------------
-% PENDENTE — a literatura especifica de xG ainda precisa ser levantada e
-% CONFERIDA antes de entrar aqui. Ela sustenta duas afirmacoes do texto:
-%   (a) quais atributos manuais de interacao sao consagrados no baseline
-%       B2 (pedido nº 4 do feedback do professor);
-%   (b) a pratica de reportar calibracao em modelos de xG.
-% Nao preencher de memoria: verificar cada uma na fonte.
-% ---------------------------------------------------------------------
+@misc{statsbomb2021freezeframes,
+  author = {{StatsBomb}},
+  title  = {{StatsBomb} Data Case Studies: Freeze Frames and Defender Locations},
+  year   = {2021},
+  url    = {https://blogarchive.statsbomb.com/news/statsbomb-data-case-studies-freeze-frames-and-defender-locations/}
+}
+
+% =====================================================================
+%  NAO INCLUIDAS por falta de confirmacao na fonte primaria:
+%
+%  - Spearman (2018), "Beyond Expected Goals", MIT SSAC. Amplamente citado,
+%    mas so localizado em fontes secundarias. NAO citar sem abrir o PDF.
+%  - Umami, Gautama & Hatta (2021), IJIIS. Existe, mas volume/paginas nao
+%    foram conferidos.
+%  - Pagina institucional da Hudl sobre xG: sem autor e sem data.
+% =====================================================================
