@@ -58,6 +58,7 @@ cp docs/experimentos/figuras/*.png relatorio/figuras/
 
 ## Estado do texto
 
-Escritas: Descrição do Problema, Abordagem e o início de Lições Aprendidas.
+Todas as seções escritas. O texto passou por revisão crítica externa em 09/08/2026;
+as correções apontadas estão aplicadas. Ver `docs/experimentos/RESULTS.md`.
 Parcial: Resultados (apenas o EXP-000). Cada lacuna está marcada com `% TODO`
 no `artigo.tex` — procure por `TODO` para ver o que falta.

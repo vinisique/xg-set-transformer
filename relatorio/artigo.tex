@@ -40,8 +40,9 @@ models in which each rung adds exactly one capability. Pairwise attention
 improves probability quality (Brier $-$0.00056, 95\% CI [$-$0.00081; $-$0.00031],
 match-clustered paired bootstrap) but \textbf{not} ranking ability (AUC
 $p = 0.797$). Attention maps show the model concentrating on blockers
-(2.76$\times$ chance) and the goalkeeper (1.38$\times$) without ever receiving
-that information as a feature.
+(2.76$\times$ chance) and the goalkeeper (1.38$\times$). We note explicitly that
+an ``in the shot triangle'' flag is itself a per-player input feature, so this
+shows the model \emph{weighting} that cue, not rediscovering the geometry.
 \end{abstract}
 
 \begin{resumo}
@@ -56,7 +57,10 @@ qualidade da probabilidade (Brier $-$0,00056, IC 95\% [$-$0,00081; $-$0,00031],
 \emph{bootstrap} pareado agrupado por partida), mas \textbf{não} a capacidade de
 ordenação (AUC, $p = 0{,}797$). Os mapas de atenção mostram o modelo
 concentrando-se nos bloqueadores (2,76$\times$ o acaso) e no goleiro
-(1,38$\times$), sem jamais ter recebido essa informação como atributo.
+(1,38$\times$). Registra-se explicitamente que o indicador ``dentro do triângulo
+do chute'' é ele próprio um atributo de entrada por jogador, de modo que o
+resultado mostra o modelo \emph{ponderando} essa pista, e não redescobrindo a
+geometria.
 \end{resumo}
 
 % =====================================================================
@@ -152,9 +156,18 @@ distância perpendicular, presença no triângulo formado com os postes) e
 indicadores de papel.
 
 A escolha dos atributos relativos é deliberada: eles informam a cada token sua
-própria relação com a finalização, \textbf{sem} codificar relações par a par
-entre jogadores. Isso mantém a ablação honesta, pois o que separa o Deep Sets do
-Transformer continua sendo apenas a atenção.
+própria relação com a finalização, sem codificar relações \emph{entre} jogadores.
+Ambos os modelos recebem exatamente o mesmo tensor de entrada.
+
+\textbf{Uma consequência dessa escolha precisa ser declarada.} Entre os 14
+atributos está um indicador binário de que o jogador se encontra no triângulo
+formado pelo chutador e os postes -- isto é, a informação ``este jogador está no
+caminho do chute'' \textbf{é fornecida ao modelo}, por jogador. Trata-se de uma
+relação entre o jogador, o chutador e a meta, calculada no pré-processamento e
+entregue pronta. Isso torna a comparação entre Deep Sets e Transformer mais
+conservadora do que aparenta: a geometria de obstrução está disponível aos dois,
+e o Deep Sets pode agregá-la por \emph{pooling}. O que a atenção pode acrescentar
+é apenas a \emph{ponderação contextual} dessa pista, não sua descoberta.
 
 \subsection{Arquitetura}\label{sec:arq}
 
@@ -225,9 +238,20 @@ contribuição do trabalho, optou-se por mantê-lo alinhado ao conjunto de atrib
 puramente geométricos, que é o mesmo espaço de informação disponível aos modelos
 neurais -- caso contrário a comparação deixaria de ser justa.
 
-A comparação decisiva na Tabela~\ref{tab:escada} é \textbf{TF contra DS}:
-ambos recebem exatamente os mesmos
-tokens, e apenas o Transformer pode comparar jogadores entre si.
+A comparação decisiva na Tabela~\ref{tab:escada} é \textbf{TF contra DS}: ambos
+recebem exatamente os mesmos tokens, e apenas o Transformer pode comparar
+jogadores entre si.
+
+\textbf{Duas ressalvas sobre o quanto a escada de fato isola.} Primeira: o
+Transformer possui \textbf{38.737} parâmetros contra \textbf{10.273} do Deep Sets
+-- 3,8 vezes mais --, de modo que a diferença entre os dois não isola a atenção,
+mas sim ``atenção mais capacidade''. Um controle com Deep Sets de capacidade
+equiparada não foi executado e permanece como a lacuna mais séria deste
+protocolo. Segunda: o degrau B2$\rightarrow$DS acrescenta simultaneamente a
+\emph{cena completa} e a \emph{não-linearidade}, pois o B2 é linear. Parte do
+salto atribuído à representação por token é, portanto, atribuível apenas à classe
+de modelo, e a separação exigiria um \emph{baseline} não-linear sobre os mesmos
+sete atributos manuais.
 
 \textbf{Divisão dos dados por partida} (70/15/15). Finalizações da mesma partida
 compartilham time, adversário e contexto tático; separá-las entre treino e teste
@@ -384,13 +408,17 @@ validação.
 \toprule
  & Brier & AUC \\
 \midrule
-DS (média $\pm$ dp) & 0,07655 $\pm$ 0,00007 & \textbf{0,8146} $\pm$ 0,0007 \\
-TF (média $\pm$ dp) & \textbf{0,07624} $\pm$ 0,00005 & 0,8141 $\pm$ 0,0009 \\
+\multicolumn{3}{@{}l}{\emph{Modelos individuais} (média $\pm$ dp das 5 sementes)} \\
+DS & 0,07655 $\pm$ 0,00007 & \textbf{0,8146} $\pm$ 0,0007 \\
+TF & \textbf{0,07624} $\pm$ 0,00005 & 0,8141 $\pm$ 0,0009 \\
+Diferença (TF $-$ DS) & $-$0,00031 & $-$0,00058 \\
 \midrule
+\multicolumn{3}{@{}l}{\emph{Combinação das 5 sementes} (média das probabilidades)} \\
+DS & 0,07635 & 0,8160 \\
+TF & \textbf{0,07579} & \textbf{0,8162} \\
 Diferença (TF $-$ DS) & $-$0,00056 & $+$0,00024 \\
-IC 95\% & [$-$0,00081; $-$0,00031] & [$-$0,00148; $+$0,00199] \\
+IC 95\% (partidas) & [$-$0,00081; $-$0,00031] & [$-$0,00148; $+$0,00199] \\
 valor-\emph{p} & $<$ 0,001 & 0,797 \\
-Veredito & \textbf{estabelecida} & não estabelecida \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -411,15 +439,37 @@ uma dissociação limpa entre as duas métricas:
 capacidade de ordenar as finalizações.}
 \end{quote}
 
-Em Brier a vantagem do Transformer é estatisticamente estabelecida, com a
-distribuição \emph{bootstrap} inteiramente à esquerda de zero. Em AUC a diferença
-é indistinguível de ruído ($p = 0{,}797$), e a média por semente favorece
-ligeiramente o Deep Sets. O mecanismo aparece no ECE da combinação das sementes:
-0,0043 do Transformer contra 0,0070 do Deep Sets.
+O sinal favorece o Transformer em Brier nas cinco sementes, e a distribuição
+\emph{bootstrap} da diferença entre as combinações situa-se integralmente à
+esquerda de zero. Em AUC a diferença é indistinguível de ruído
+($p = 0{,}797$) e, entre modelos individuais, favorece \emph{o Deep Sets}.
 
-Cabe registrar a magnitude: a diferença de 0,00056 em Brier é consistente e
-significativa, mas pequena em termos absolutos. O ganho é real; sua relevância
-prática para uma aplicação de análise de futebol é discutível e depende do uso.
+\textbf{Três ressalvas impedem tratar o efeito como estabelecido.}
+
+Primeira, \textbf{o teste condiciona em uma combinação específica de sementes}.
+Ele reamostra partidas, propagando a variabilidade dos dados, mas não a
+variabilidade de \emph{inicialização}. A diferença entre modelos individuais
+($-$0,00031) é pouco mais da metade da diferença entre as combinações
+($-$0,00056): parte do efeito anunciado é o Transformer beneficiar-se mais da
+média de sementes -- suas previsões são mais dispersas entre inicializações --,
+e não a atenção.
+
+Segunda, \textbf{o mecanismo alegado depende do recorte}. Na combinação das
+sementes o Transformer é o mais bem calibrado (ECE 0,0043 contra 0,0070); nos
+modelos individuais a ordem \emph{inverte} (0,0082 contra 0,0074). Atribuir o
+ganho à calibração é, portanto, sustentável apenas para o conjunto combinado.
+
+Terceira, \textbf{a magnitude é pequena}. Tomando a taxa média de gol como
+referência trivial, o Brier de referência no teste é 0,0941; a perícia do Deep
+Sets sobre essa referência é de 18,9\,\% e a do Transformer, 19,5\,\%. A atenção
+acrescenta cerca de meio ponto percentual de perícia -- aproximadamente 3\,\% da
+capacidade preditiva do modelo. O efeito é direcionalmente consistente, mas sua
+relevância prática é discutível.
+
+Some-se a isso a diferença de capacidade declarada na Seção 2.4: o resultado
+honesto é que \textbf{a atenção, somada a 3,8 vezes mais parâmetros, produz um
+ganho pequeno e consistente na qualidade da probabilidade, e nenhum na
+ordenação}.
 
 \subsection{O que a atenção está olhando}
 
@@ -454,17 +504,31 @@ que um jogador receberia por acaso.}
 \end{figure}
 
 O ordenamento da Tabela~\ref{tab:atencao}, visível na Figura~\ref{fig:atencao}
--- bloqueador, goleiro, adversário distante, companheiro --
-é exatamente a hierarquia que a literatura de xG codifica manualmente. O modelo
-nunca recebeu essa informação: cada token contém geometria e um indicador de
-papel, mas \textbf{nada informa que um jogador está entre o chutador e o gol}.
-Essa relação é intrinsecamente par a par, e é o que apenas a atenção pode
-representar -- o Deep Sets, por construção, não consegue.
+-- bloqueador, goleiro, adversário distante, companheiro -- reproduz a hierarquia
+que a literatura de xG codifica manualmente.
 
-Ressalva importante: a análise é \textbf{correlacional}. Ela mostra onde a atenção
-se concentra, mas não demonstra que é dessa concentração que decorre o ganho em
-Brier. Uma ablação -- suprimir a atenção sobre os bloqueadores e medir a perda --
-fecharia o argumento causal e fica como trabalho futuro.
+\textbf{É preciso ser preciso sobre o que isso demonstra.} Como declarado na
+Seção 2.2, o indicador ``dentro do triângulo do chute'' \textbf{é um atributo de
+entrada}, fornecido por jogador. O modelo não descobriu quem está no caminho do
+chute: essa informação lhe foi dada. O que a Tabela~\ref{tab:atencao} mostra é
+que o modelo aprendeu a \textbf{ponderar} essa pista -- atribuindo peso 2,76
+vezes maior a quem a possui --, em vez de tratar todos os jogadores como
+igualmente relevantes. É um resultado mais modesto do que ``a atenção redescobriu
+a geometria de interação'', e é o que os dados sustentam.
+
+Isso também oferece a explicação mais econômica para o Deep Sets igualar o
+Transformer em ordenação: se a geometria de obstrução chega pronta em cada token,
+um agregador por \emph{pooling} já a aproveita, e resta pouco para a atenção
+acrescentar.
+
+Três ressalvas adicionais. A análise é \textbf{correlacional}: mostra onde a
+atenção se concentra, não que dela decorra o ganho em Brier. Os pesos da segunda
+camada operam sobre representações já contextualizadas, de modo que ``atenção
+alta'' não equivale a ``importância'' -- ponto amplamente discutido na literatura
+sobre atenção como explicação. E os valores provêm de \textbf{uma única semente},
+com média sobre 2 camadas e 4 cabeças, o que pode cancelar papéis distintos. A
+ablação causal -- suprimir a atenção sobre os bloqueadores e medir a perda, nas
+cinco sementes -- é o teste que fecharia o argumento e não foi executado.
 
 \subsection{Estudo de caso: Eurocopa 2024}
 
@@ -489,8 +553,8 @@ selecionados por critério automático, não manualmente.}
 \end{figure}
 
 Os três casos da Figura~\ref{fig:caso} mostram o modelo \textbf{deslocando o foco
-conforme a cena}, sem que nenhum atributo informe qual jogador importa naquele
-lance. No chute de fora da área com o goleiro na trajetória, o goleiro concentra
+conforme a cena} -- ponderando de modo distinto jogadores que recebem os mesmos
+tipos de atributo. No chute de fora da área com o goleiro na trajetória, o goleiro concentra
 sozinho 32\,\% de toda a atenção dirigida aos jogadores, e o xG previsto é 0,035.
 Na finalização dentro da área com defensores atravessados, a atenção migra para
 os bloqueadores (49\,\%) e o goleiro cai para 5\,\%; apesar da proximidade da
@@ -549,6 +613,22 @@ sementes, o Deep Sets apresentou amplitude de AUC de 0,0001, sugerindo
 extraordinária estabilidade. Com 5 sementes, a amplitude foi de 0,0019 -- dezenove
 vezes maior -- e a conclusão sobre sobreposição de faixas, obtida com a amostra
 menor, mostrou-se equivocada.
+
+\textbf{Afirmei que o modelo redescobriu algo que eu havia lhe fornecido.} A
+primeira versão deste relatório sustentava que a concentração de atenção sobre os
+bloqueadores demonstrava redescoberta autônoma da geometria de interação, ``sem
+jamais ter recebido essa informação como atributo''. A afirmação é
+\textbf{falsa}: o indicador de presença no triângulo do chute é o décimo atributo
+de cada token. O erro sobreviveu a uma verificação automática que confere cada
+número do texto contra o registro do experimento que o produziu -- porque essa
+verificação garante que os números estão \emph{transcritos} corretamente, não que
+estão sendo \emph{interpretados} corretamente. Nenhuma automação substitui a
+leitura crítica do próprio código.
+
+\textbf{A escada isolava menos do que eu afirmava.} O Transformer tem 3,8 vezes
+mais parâmetros que o Deep Sets, e o degrau B2$\rightarrow$DS mistura
+representação com não-linearidade. Ambos os confundimentos estavam presentes
+desde o desenho do protocolo e só foram percebidos na revisão final.
 
 \subsection{O que eu faria diferente}
 
