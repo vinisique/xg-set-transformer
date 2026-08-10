@@ -516,3 +516,97 @@ violação da propriedade.
 
 A afirmação da Seção 1.3 do relatório deixa de ser apenas argumentativa e passa a
 ter verificação empírica associada.
+
+---
+
+## EXP-008 — controle de capacidade: a vantagem é atenção ou tamanho?
+
+- **Data:** 2026-08-10 · **Script:** `poc/exp008_capacidade.py`
+- **Motivo:** a revisão crítica apontou que o Transformer tem 3,8× os parâmetros
+  do Deep Sets, de modo que a comparação isolava "atenção + capacidade".
+- **Controle:** Deep Sets com dim 96 → **38.977 parâmetros** contra 38.737 do
+  Transformer (**100,6 % de equiparação**). Previsões do Transformer
+  reaproveitadas do EXP-004 — mesmas sementes, mesmo split.
+
+### Resultado [medido] — 5 sementes por modelo
+
+| Modelo | Parâmetros | Brier (média ± dp) | AUC (média ± dp) |
+|---|---|---|---|
+| DS original (dim 48) | 10.273 | 0,07655 ± 0,00008 | **0,8146** ± 0,0007 |
+| **DS largo (dim 96)** | **38.977** | 0,07670 ± 0,00005 | 0,8131 ± 0,0010 |
+| TF (dim 48) | 38.737 | **0,07624** ± 0,00006 | 0,8141 ± 0,0011 |
+
+Combinação das 5 sementes: DS 0,07635 · DS-largo 0,07653 · **TF 0,07579**.
+
+### Bootstrap pareado agrupado por partida (2.000 reamostras)
+
+| Comparação | Diferença | IC 95 % | p | Veredito |
+|---|---|---|---|---|
+| **TF − DS largo** | **−0,00073** | [−0,00101; −0,00045] | < 0,001 | **estabelecida** |
+| TF − DS original | −0,00056 | [−0,00081; −0,00031] | < 0,001 | estabelecida |
+| DS largo − DS original | **+0,00018** | [+0,00002; +0,00034] | 0,023 | estabelecida |
+
+![Controle de capacidade](figuras/EXP-008-capacidade.png)
+
+## Leitura
+
+**A hipótese da capacidade é refutada.** Equiparar os parâmetros não aproximou o
+Deep Sets do Transformer — **afastou**. A vantagem do Transformer *cresce* quando
+a comparação é justa: de −0,00056 contra o Deep Sets pequeno para **−0,00073**
+contra o equiparado.
+
+E há um resultado próprio: **aumentar a capacidade do Deep Sets o piora**
+(+0,00018 de Brier, IC sem cruzar zero). Sem atenção, os parâmetros extras não
+encontram estrutura para explorar e o modelo sobreajusta. A crítica supunha que
+capacidade explicaria o efeito; a medição mostra o contrário.
+
+---
+
+## EXP-009 — ablação causal: o ganho vem MESMO da atenção nos bloqueadores?
+
+- **Data:** 2026-08-10 · **Script:** `poc/exp009_ablacao.py` · **Figura:** `poc/fig_exp009.py`
+- **Método:** a atenção que o `[CLS]` dirige a um grupo é **zerada e a linha
+  renormalizada** — o modelo continua vendo uma distribuição válida, mas proibido
+  de olhar para aqueles jogadores. Mede-se a piora do Brier.
+- **Verificação obrigatória:** sem suprimir nada, o forward reimplementado
+  reproduz o modelo com erro de 9,5 × 10⁻⁷.
+
+### Resultado [medido] — Transformer semente 0, 14.935 chutes
+
+| Grupo suprimido | Brier | Δ vs. intacto | AUC |
+|---|---|---|---|
+| nenhum (referência) | 0,07612 | — | 0,8159 |
+| **Bloqueadores** | 0,07701 | **+0,00088** | **0,8064** |
+| Goleiro | 0,07671 | +0,00059 | 0,8145 |
+| *Controle:* sorteados, mesma quantidade | 0,07624 | +0,00011 | 0,8148 |
+| Companheiros | 0,07618 | +0,00005 | 0,8153 |
+| Todos os jogadores | 0,10194 | +0,02582 | 0,7951 |
+
+![Ablação causal](figuras/EXP-009-ablacao.png)
+
+## Leitura
+
+**A evidência deixa de ser correlacional.** Proibir o `[CLS]` de olhar para os
+bloqueadores custa **+0,00088** de Brier — **7,9 vezes** o que custa suprimir a
+**mesma quantidade** de jogadores sorteados (+0,00011). O controle é o que dá
+sentido ao número: remover jogadores sempre piora alguma coisa; o que importa é
+que remover *estes* piora oito vezes mais.
+
+Dois detalhes reforçam:
+
+- **A queda de AUC é desproporcional.** Suprimir bloqueadores derruba a AUC de
+  0,8159 para **0,8064** — quase 0,01, enquanto o sorteio custa 0,001.
+- **O efeito é maior que a própria vantagem do modelo.** A atenção aos
+  bloqueadores vale +0,00088 de Brier, mais que os 0,00073 que separam o
+  Transformer do Deep Sets equiparado. Não é um mecanismo marginal: é
+  estruturante.
+
+Companheiros custam quase nada (+0,00005), o que é coerente — em uma finalização,
+quem atrapalha são os adversários.
+
+## Limitações
+
+- **Uma única semente** (a única com pesos salvos). Estender às cinco exige
+  retreinar, cerca de uma hora.
+- A supressão age nas **duas camadas** simultaneamente; não se separou o papel de
+  cada uma nem de cada cabeça.
