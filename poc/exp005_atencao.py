@@ -109,8 +109,9 @@ ys = list(range(len(nomes)))[::-1]
 cores = [viz.SERIE[1], viz.SERIE[3], viz.SERIE[0], viz.SERIE[2]]
 
 ax.axvline(1.0, color=viz.COR["tinta"], lw=1.6, zorder=4)
-ax.annotate("atenção que o jogador\nreceberia por acaso", (1.0, len(nomes) - 0.45),
-            textcoords="offset points", xytext=(8, 0), fontsize=8,
+# anotacao entre o 3o e o 4o item, longe do subtitulo
+ax.annotate("atenção que o jogador\nreceberia por acaso", (1.0, 0.55),
+            textcoords="offset points", xytext=(10, 0), fontsize=8,
             color=viz.COR["tinta_2"], va="center")
 for nome, y_, v, c in zip(nomes, ys, vals, cores):
     ax.plot([1.0, v], [y_, y_], color=c, lw=3, solid_capstyle="round", zorder=2)

@@ -298,3 +298,64 @@ tornou o efeito visível. **Uma decisão de método mudou a conclusão científi
   critério de parada afeta o Transformer bem mais que o Deep Sets.
 - Nada aqui explica **o que** a atenção está usando. Isso é o EXP-005, com os
   mapas de atenção.
+
+---
+
+## EXP-005 — o modelo redescobriu o goleiro e os bloqueadores
+
+- **Data:** 2026-08-09 · **Script:** `poc/exp005_atencao.py`
+- **Pergunta:** o `[CLS]` concentra atenção no goleiro e nos bloqueadores, sem
+  nunca ter recebido "este jogador atrapalha este chute" como atributo?
+- **Modelo:** Transformer, semente 0, pesos em `experiments/EXP-005/former_seed0.pt`.
+- **Métrica:** razão de atenção = atenção recebida ÷ atenção uniforme
+  (1/n_visíveis). **1,0 = olhado como um jogador qualquer da cena.**
+
+### Resultado [medido]
+
+| Papel na cena | Razão média | Mediana | Cenas |
+|---|---|---|---|
+| **Bloqueador** (adversário na linha do chute) | **2,76×** | 2,45× | 7.778 |
+| **Goleiro adversário** | **1,38×** | 1,21× | 14.921 |
+| Outro adversário | 0,92× | 0,96× | 14.929 |
+| Companheiro | 0,75× | 0,74× | 14.741 |
+
+### Evidência visual
+
+![Para quem o CLS olha](figuras/EXP-005-atencao-papeis.png)
+
+## Leitura
+
+**A hipótese se confirmou, e com folga.** O modelo olha para um bloqueador
+**2,76 vezes mais** do que olharia se distribuísse atenção por acaso, e para o
+goleiro 1,38 vezes mais. Na direção oposta, sub-atende companheiros (0,75×) e
+adversários fora da linha do chute (0,92×).
+
+O ordenamento é exatamente o que a literatura de xG codifica à mão:
+**bloqueador > goleiro > adversário distante > companheiro.** O modelo nunca
+recebeu essa hierarquia. Cada token traz apenas geometria e um indicador de papel
+(companheiro / adversário / goleiro); **nada diz "este jogador está entre o
+chutador e o gol"**. A relação "estar no caminho" é par a par, e é precisamente o
+que só a atenção pode representar — o Deep Sets, por construção, não consegue.
+
+**Isso fecha o argumento do trabalho.** O EXP-004b mostrou *que* a atenção melhora
+a probabilidade (Brier −0,00056, IC 95% sem cruzar zero). O EXP-005 mostra *como*:
+ela redescobre sozinha a geometria de interação. Os dois resultados são
+independentes e apontam para a mesma conclusão.
+
+## Nota de método — por que a verificação do forward era obrigatória
+
+O `nn.TransformerEncoder` não expõe os pesos de atenção, então o forward foi
+replicado à mão (`xg_base.atencao_do_cls`). Uma replicação errada produziria
+mapas de atenção **plausíveis e falsos**, descrevendo um modelo diferente do
+avaliado. Por isso a função afirma que o logit reproduzido bate com o do modelo
+(tolerância 1e-4) e quebra se divergir. A asserção passou nos 14.935 chutes.
+
+## Limitações
+
+- **Uma única semente.** As razões podem variar entre inicializações; o ideal
+  seria repetir nas 5 sementes do EXP-004b.
+- A métrica agrega as 2 camadas e as 4 cabeças. Cabeças individuais podem ter
+  papéis distintos — não investigado.
+- A análise é **correlacional**: mostra onde a atenção se concentra, não prova
+  que é disso que vem o ganho de Brier. Uma ablação (zerar a atenção nos
+  bloqueadores e medir a perda) fecharia o argumento causal.

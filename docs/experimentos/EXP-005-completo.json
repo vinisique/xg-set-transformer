@@ -1,0 +1,27 @@
+{
+  "id": "EXP-005",
+  "semente": 0,
+  "n_teste": 14935,
+  "grupos": {
+    "Goleiro adversário": {
+      "razao_media": 1.3810075713688827,
+      "razao_mediana": 1.2141144275665283,
+      "n_cenas": 14921
+    },
+    "Bloqueador (adversário na linha do chute)": {
+      "razao_media": 2.757602855686494,
+      "razao_mediana": 2.450166404247284,
+      "n_cenas": 7778
+    },
+    "Outro adversário": {
+      "razao_media": 0.9231425238726688,
+      "razao_mediana": 0.9584208726882935,
+      "n_cenas": 14929
+    },
+    "Companheiro": {
+      "razao_media": 0.7531331855972795,
+      "razao_mediana": 0.7381584793329239,
+      "n_cenas": 14741
+    }
+  }
+}
