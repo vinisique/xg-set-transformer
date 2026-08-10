@@ -239,6 +239,62 @@ def atencao_do_cls(model, x, pad):
     return logit, torch.stack(pesos, 1)
 
 
+@torch.no_grad()
+def forward_com_intervencao(model, x, pad, suprimir=None, verificar=False):
+    """Forward do Former com intervencao causal na atencao do [CLS].
+
+    `suprimir`: bool [B, 23]. Onde True, a atencao que o [CLS] dirige aquele
+    token e zerada e a linha e RENORMALIZADA — o modelo continua vendo uma
+    distribuicao de atencao valida, so que proibida de olhar para aqueles
+    jogadores. Isso responde "o ganho vem DALI?", que a analise correlacional
+    do EXP-005 nao responde.
+
+    A multi-head attention e recalculada a mao (nn.MultiheadAttention nao
+    permite intervir entre o softmax e a multiplicacao por V). Com
+    `verificar=True` e `suprimir=None`, AFIRMA que reproduz o modelo original —
+    sem isso a ablacao poderia estar medindo outra rede.
+    """
+    import torch.nn.functional as F
+
+    model.eval()
+    h = torch.cat([model.cls.expand(len(x), -1, -1), model.proj(x)], 1)
+    p = torch.cat([torch.zeros(len(x), 1, dtype=torch.bool), pad], 1)
+    B, N, _ = h.shape
+
+    for camada in model.tf.layers:
+        mha = camada.self_attn
+        n_cab = mha.num_heads
+        d = h.shape[-1]
+        dk = d // n_cab
+
+        z = camada.norm1(h)
+        qkv = F.linear(z, mha.in_proj_weight, mha.in_proj_bias)
+        q, k, v = qkv.chunk(3, dim=-1)
+        forma = lambda t: t.view(B, N, n_cab, dk).transpose(1, 2)
+        q, k, v = forma(q), forma(k), forma(v)
+
+        scores = (q @ k.transpose(-2, -1)) / (dk ** 0.5)
+        scores = scores.masked_fill(p[:, None, None, :], float("-inf"))
+        attn = torch.softmax(scores, dim=-1)
+
+        if suprimir is not None:
+            # zera apenas a LINHA do [CLS] (query 0) nas colunas suprimidas
+            corte = suprimir[:, None, :].expand(B, n_cab, N)
+            linha = attn[:, :, 0, :].masked_fill(corte, 0.0)
+            attn = attn.clone()
+            attn[:, :, 0, :] = linha / linha.sum(-1, keepdim=True).clamp(min=1e-9)
+
+        saida = (attn @ v).transpose(1, 2).contiguous().view(B, N, d)
+        h = h + mha.out_proj(saida)
+        h = h + camada._ff_block(camada.norm2(h))
+
+    logit = model.head(h[:, 0]).squeeze(-1)
+    if verificar:
+        erro = (logit - model(x, pad)).abs().max().item()
+        assert erro < 1e-4, f"forward com intervencao divergiu do modelo ({erro:.2e})"
+    return logit
+
+
 def treina(model, D, seed, criterio="brier", epocas=60, paciencia=8, batch=256,
            tol_rel=1e-4):
     """Treina e devolve as previsoes de TESTE do melhor estado de validacao.
