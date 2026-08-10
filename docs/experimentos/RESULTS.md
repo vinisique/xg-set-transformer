@@ -654,3 +654,64 @@ atributos feitos à mão entrega a melhor calibração do estudo.
 
 Isso não afeta a questão central do trabalho — TF contra DS, que compartilham
 tokens e classe de modelo —, mas afeta diretamente a narrativa do degrau anterior.
+
+---
+
+## EXP-011 — robustez: por semente e por subgrupo
+
+- **Data:** 2026-08-10 · **Script:** `poc/exp011_robustez.py`
+- Usa as previsões já salvas do EXP-004; nada foi retreinado.
+
+### (A) O mesmo teste, semente a semente [medido]
+
+| Semente | Brier DS | Brier TF | Diferença | IC 95 % | p |
+|---|---|---|---|---|---|
+| 0 | 0,07653 | 0,07616 | −0,00037 | [−0,00074; +0,00001] | 0,054 |
+| 1 | 0,07653 | 0,07623 | −0,00030 | [−0,00075; +0,00012] | 0,169 |
+| 2 | 0,07657 | 0,07623 | −0,00033 | [−0,00075; +0,00009] | 0,100 |
+| 3 | 0,07666 | 0,07625 | −0,00041 | [−0,00080; +0,00001] | 0,053 |
+| 4 | 0,07644 | 0,07632 | −0,00012 | [−0,00054; +0,00032] | 0,585 |
+
+**O sinal favorece o Transformer em 5 de 5 sementes, mas o intervalo cruza zero
+em 5 de 5.**
+
+### (B) A conclusão por subgrupo [medido]
+
+| Recorte | Chutes | Gols | Diferença | IC 95 % |
+|---|---|---|---|---|
+| Futebol feminino | 4.443 | 481 | **−0,00086** | [−0,00137; −0,00035] |
+| Futebol masculino | 10.492 | 1.090 | −0,00043 | [−0,00073; −0,00012] |
+| Temporadas 2015/16 | 6.070 | 610 | −0,00053 | [−0,00091; −0,00016] |
+| Demais competições | 8.865 | 961 | −0,00058 | [−0,00095; −0,00021] |
+
+**Nenhum dos quatro cruza zero.**
+
+![Robustez](figuras/EXP-011-robustez.png)
+
+## Leitura
+
+O contraste entre os dois painéis é o resultado:
+
+**A significância depende da combinação de sementes.** Isoladamente, nenhuma
+inicialização produz um intervalo que exclua zero — o melhor caso chega a
+p = 0,053. A significância declarada no EXP-004 vem de comparar dois conjuntos
+combinados, e o teste propaga a variabilidade das partidas, não a de
+inicialização. **O relatório precisa dizer isso.**
+
+Em compensação, o **sinal é consistente em 5 de 5 sementes**. Sob um teste de
+sinal simples, cinco acertos em cinco dariam p ≈ 0,06 bilateral — sugestivo, não
+conclusivo, e coerente com o quadro geral: o efeito existe e é pequeno demais para
+uma única inicialização detectar com 595 partidas.
+
+**A generalização, essa se sustenta.** O efeito aparece em futebol feminino e
+masculino, na coorte 2015/16 e fora dela, e em nenhum recorte o intervalo cruza
+zero. Isso **substitui** a justificativa inválida que estava no relatório — "as
+taxas de gol são parecidas, logo pode misturar" —, que confundia taxa marginal com
+relação condicional. O efeito é, inclusive, **duas vezes maior no futebol
+feminino** (−0,00086 contra −0,00043), o que merece nota mas não investigação
+neste trabalho.
+
+Fica de fora um teste mais duro que não foi feito: **hold-out por competição** —
+treinar sem a Eurocopa 2024 e avaliar nela. Os subgrupos aqui vêm do mesmo
+conjunto de 80 competições-temporada, então medem robustez interna, não
+generalização para um torneio não visto.
