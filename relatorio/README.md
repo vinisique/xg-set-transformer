@@ -60,5 +60,7 @@ cp docs/experimentos/figuras/*.png relatorio/figuras/
 
 Todas as seções escritas. O texto passou por revisão crítica externa em 09/08/2026;
 as correções apontadas estão aplicadas. Ver `docs/experimentos/RESULTS.md`.
-Parcial: Resultados (apenas o EXP-000). Cada lacuna está marcada com `% TODO`
-no `artigo.tex` — procure por `TODO` para ver o que falta.
+Não há `TODO` pendente no `artigo.tex`. As lacunas conhecidas que permanecem
+são experimentais, não de redação, e estão declaradas no próprio texto: falta o
+controle de capacidade (um Deep Sets com ~39 mil parâmetros) e a ablação causal
+da atenção.
