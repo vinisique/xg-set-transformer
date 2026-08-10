@@ -34,10 +34,14 @@
 Expected Goals (xG) models estimate the probability that a shot results in a
 goal. Classical models rely on hand-crafted interaction features such as
 goalkeeper distance and the number of blockers. We ask whether a Transformer
-that treats \textbf{each player as a token} learns this interaction geometry on
-its own. Using 99{,}746 shots with StatsBomb freeze-frames, we compare a ladder
-of models in which each rung adds exactly one capability, isolating the
-contribution of pairwise attention. % TODO: fechar com o resultado quantitativo
+treating \textbf{each player as a token} learns this interaction geometry on its
+own. Over 99{,}746 shots with StatsBomb freeze-frames, we compare a ladder of
+models in which each rung adds exactly one capability. Pairwise attention
+improves probability quality (Brier $-$0.00056, 95\% CI [$-$0.00081; $-$0.00031],
+match-clustered paired bootstrap) but \textbf{not} ranking ability (AUC
+$p = 0.797$). Attention maps show the model concentrating on blockers
+(2.76$\times$ chance) and the goalkeeper (1.38$\times$) without ever receiving
+that information as a feature.
 \end{abstract}
 
 \begin{resumo}
@@ -45,10 +49,14 @@ Modelos de \emph{Expected Goals} (xG) estimam a probabilidade de uma finalizaç�
 terminar em gol. Os modelos clássicos dependem de atributos de interação
 desenhados à mão, como a distância do goleiro e o número de bloqueadores. Este
 trabalho investiga se um Transformer que trata \textbf{cada jogador como um
-token} aprende sozinho essa geometria de interação. Sobre 99.746 finalizações
-com \emph{freeze-frames} da StatsBomb, comparamos uma escada de modelos em que
-cada degrau acrescenta exatamente uma capacidade, isolando a contribuição da
-atenção par a par. % TODO: fechar com o resultado quantitativo
+token} aprende sozinho essa geometria de interação. Sobre 99.746 finalizações com
+\emph{freeze-frames} da StatsBomb, compara-se uma escada de modelos em que cada
+degrau acrescenta exatamente uma capacidade. A atenção par a par melhora a
+qualidade da probabilidade (Brier $-$0,00056, IC 95\% [$-$0,00081; $-$0,00031],
+\emph{bootstrap} pareado agrupado por partida), mas \textbf{não} a capacidade de
+ordenação (AUC, $p = 0{,}797$). Os mapas de atenção mostram o modelo
+concentrando-se nos bloqueadores (2,76$\times$ o acaso) e no goleiro
+(1,38$\times$), sem jamais ter recebido essa informação como atributo.
 \end{resumo}
 
 % =====================================================================
@@ -86,7 +94,7 @@ Cada finalização é um par (cena, desfecho). A cena é um \textbf{conjunto} de
 é binário. O objetivo é aprender uma função que mapeia o conjunto em uma
 probabilidade no intervalo $[0,1]$.
 
-A propriedade que define o problema é a \textbf{invariância à permutação}: a
+A propriedade que define o problema é a \textbf{invariância à permutação}~\cite{zaheer2017,lee2019set}: a
 ordem em que os jogadores são listados não carrega informação e, portanto,
 embaralhá-la não pode alterar a previsão. Isso distingue a tarefa de problemas
 sequenciais e justifica a ausência de \emph{positional encoding}
@@ -97,8 +105,8 @@ sequenciais e justifica a ausência de \emph{positional encoding}
 
 \subsection{Dados}
 
-Utilizamos a StatsBomb Open Data, base pública sob licença de uso não comercial
-com atribuição. Para cada finalização, a base registra o \emph{freeze-frame}: as
+Utilizamos a StatsBomb Open Data~\cite{statsbomb}, base pública sob licença de uso
+não comercial com atribuição. Para cada finalização, a base registra o \emph{freeze-frame}: as
 coordenadas $(x,y)$ de todos os jogadores visíveis no instante do chute, com
 seus papéis (companheiro, adversário, goleiro) e o desfecho do lance. Após
 excluir pênaltis e lances sem \emph{freeze-frame}, restam 99.746 finalizações de
@@ -135,7 +143,8 @@ Transformer continua sendo apenas a atenção.
 
 \subsection{Arquitetura}\label{sec:arq}
 
-\emph{Encoder} Transformer compacto: 2 camadas, 4 cabeças, dimensão 48, token
+\emph{Encoder} Transformer~\cite{vaswani2017} compacto: 2 camadas, 4 cabeças,
+dimensão 48, token
 \texttt{[CLS]}, \textbf{sem \emph{positional encoding}} e com máscara de
 \emph{padding} nas posições sem jogador. Saída sigmoide. Implementação em
 PyTorch.
@@ -158,21 +167,22 @@ componente específico:
 \midrule
 B1 & Regressão logística: distância, ângulo, cabeceio & o xG ``de livro'' \\
 B2 & B1 + atributos manuais de interação & interação \textbf{feita à mão} \\
-DS & Deep Sets sobre os tokens & informação por jogador \\
+DS & Deep Sets~\cite{zaheer2017} sobre os tokens & informação por jogador \\
 TF & Transformer sobre os mesmos tokens & interação \textbf{aprendida} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-A comparação decisiva é \textbf{TF contra DS}: ambos recebem exatamente os mesmos
+A comparação decisiva na Tabela~\ref{tab:escada} é \textbf{TF contra DS}:
+ambos recebem exatamente os mesmos
 tokens, e apenas o Transformer pode comparar jogadores entre si.
 
 \textbf{Divisão dos dados por partida} (70/15/15). Finalizações da mesma partida
 compartilham time, adversário e contexto tático; separá-las entre treino e teste
 inflaria as métricas por vazamento.
 
-\textbf{Métricas.} AUC (ordenação), \emph{log loss}, \textbf{Brier score} e
-\textbf{curva de calibração} (qualidade da probabilidade). Como xG é uma
+\textbf{Métricas.} AUC (ordenação), \emph{log loss}, \textbf{Brier score}~\cite{brier1950} e
+\textbf{curva de calibração}~\cite{niculescu2005} (qualidade da probabilidade). Como xG é uma
 probabilidade e não um \emph{ranking}, o Brier é a métrica de decisão; a AUC o
 acompanha para distinguir ``ordena bem'' de ``acerta o valor''.
 
@@ -184,23 +194,26 @@ individualmente produziria intervalos de confiança estreitos demais.
 % =====================================================================
 \section{Resultados}
 
-% TODO: esta secao esta parcial. Apenas o EXP-000 foi executado.
-
 \subsection{Escada de \emph{baselines}}
+
+A Tabela~\ref{tab:resultados} apresenta o desempenho dos quatro modelos. Cada
+degrau acrescenta uma única capacidade, de modo que a diferença entre linhas
+consecutivas atribui o mérito a um componente específico.
 
 \begin{table}[ht]
 \centering
 \caption{Desempenho no conjunto de teste (14.935 finalizações), divisão por
-partida. Modelos neurais: média de 2 sementes.}
+partida. Modelos neurais: combinação de 2 sementes. ECE = erro de calibração
+esperado, em decis de xG previsto.}
 \label{tab:resultados}
-\begin{tabular}{@{}lrrr@{}}
+\begin{tabular}{@{}lrrrr@{}}
 \toprule
-Modelo & AUC & \emph{Log loss} & Ganho em AUC \\
+Modelo & AUC & \emph{Log loss} & Brier & ECE \\
 \midrule
-B1 & 0,7653 & 0,2887 & --- \\
-B2 & 0,7961 & 0,2739 & +0,0308 \\
-DS & 0,8144 & 0,2659 & +0,0183 \\
-TF & 0,8158 & 0,2650 & +0,0014 \\
+B1 & 0,7653 & 0,2887 & 0,08237 & 0,0076 \\
+B2 & 0,7961 & 0,2739 & 0,07846 & \textbf{0,0035} \\
+DS & 0,8149 & 0,2655 & 0,07643 & 0,0082 \\
+TF & \textbf{0,8169} & \textbf{0,2644} & \textbf{0,07609} & 0,0064 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -209,20 +222,137 @@ TF & 0,8158 & 0,2650 & +0,0014 \\
 \centering
 \includegraphics[width=\textwidth]{figuras/EXP-000-escada.png}
 \caption{Ganho de cada degrau da escada. Cada segmento representa o incremento
-sobre o degrau anterior.}
+sobre o degrau anterior. Optou-se por marcadores em vez de barras porque as AUCs
+ocupam a faixa estreita entre 0,76 e 0,82: barras a partir da origem tornariam as
+diferenças invisíveis, e barras truncadas distorceriam a proporção.}
 \label{fig:escada}
 \end{figure}
 
-Dois achados. Primeiro, a representação por token tem valor claro: o salto de B2
-para Deep Sets (+0,0183 de AUC) mostra que fornecer a cena inteira ao modelo
-supera resumi-la em atributos manuais. Segundo, e mais relevante para a pergunta
-do trabalho, \textbf{a atenção acrescenta pouco} sobre o Deep Sets: +0,0014 de
-AUC, valor da mesma ordem do desvio entre sementes.
+A Figura~\ref{fig:escada} torna esse padrão visível. O salto de B2 para Deep Sets
+(+0,0183 de AUC) mostra que fornecer a cena inteira
+ao modelo supera resumi-la em atributos manuais: a representação por token tem
+valor claro. Já o degrau seguinte, de Deep Sets para Transformer, é de apenas
++0,0014 de AUC.
 
-% TODO: 3.2 calibracao (EXP-000)
-% TODO: 3.3 TF vs DS com 5 sementes e bootstrap pareado (EXP-004)
-% TODO: 3.4 mapas de atencao (EXP-005)
-% TODO: 3.5 estudo de caso: Eurocopa 2024
+\subsection{Calibração}
+
+A Tabela~\ref{tab:resultados} revela um padrão que a AUC isoladamente esconde:
+\textbf{o B2 é o modelo mais bem calibrado do conjunto} (ECE 0,0035), apesar de
+ter o segundo pior Brier. Os modelos neurais apresentam Brier melhor e calibração
+pior.
+
+Não há contradição. O Brier decompõe-se em \emph{calibração} -- as probabilidades
+correspondem às frequências observadas? -- e \emph{refinamento} -- o modelo separa
+bem os casos? Os modelos neurais vencem no refinamento e perdem na calibração, com
+saldo positivo. A Figura~\ref{fig:calib} mostra as quatro curvas.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{figuras/EXP-000-calibracao.png}
+\caption{Curva de calibração e Brier \emph{score}. À esquerda, a frequência
+observada de gol contra o xG previsto, por decil.}
+\label{fig:calib}
+\end{figure}
+
+\subsection{A atenção acrescenta algo? (questão central)}
+
+Deep Sets e Transformer recebem exatamente os mesmos tokens; apenas o segundo
+compara jogadores entre si. A diferença entre eles isola o valor da atenção par a
+par. Foram treinadas 5 sementes de cada modelo, com seleção por Brier de
+validação.
+
+\begin{table}[ht]
+\centering
+\caption{Transformer contra Deep Sets, 5 sementes cada. Teste pareado por
+\emph{bootstrap} agrupado por partida (2.000 reamostras).}
+\label{tab:central}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+ & Brier & AUC \\
+\midrule
+DS (média $\pm$ dp) & 0,07655 $\pm$ 0,00007 & \textbf{0,8146} $\pm$ 0,0007 \\
+TF (média $\pm$ dp) & \textbf{0,07624} $\pm$ 0,00005 & 0,8141 $\pm$ 0,0009 \\
+\midrule
+Diferença (TF $-$ DS) & $-$0,00056 & $+$0,00024 \\
+IC 95\% & [$-$0,00081; $-$0,00031] & [$-$0,00148; $+$0,00199] \\
+valor-\emph{p} & $<$ 0,001 & 0,797 \\
+Veredito & \textbf{estabelecida} & não estabelecida \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{figuras/EXP-004-bootstrap.png}
+\caption{Distribuição \emph{bootstrap} da diferença de Brier. As 2.000 reamostras
+situam-se integralmente à esquerda de zero.}
+\label{fig:boot}
+\end{figure}
+
+A Tabela~\ref{tab:central} e a Figura~\ref{fig:boot} apresentam o resultado, que é
+uma dissociação limpa entre as duas métricas:
+
+\begin{quote}
+\textbf{A atenção par a par melhora a qualidade da probabilidade, mas não a
+capacidade de ordenar as finalizações.}
+\end{quote}
+
+Em Brier a vantagem do Transformer é estatisticamente estabelecida, com a
+distribuição \emph{bootstrap} inteiramente à esquerda de zero. Em AUC a diferença
+é indistinguível de ruído ($p = 0{,}797$), e a média por semente favorece
+ligeiramente o Deep Sets. O mecanismo aparece no ECE da combinação das sementes:
+0,0043 do Transformer contra 0,0070 do Deep Sets.
+
+Cabe registrar a magnitude: a diferença de 0,00056 em Brier é consistente e
+significativa, mas pequena em termos absolutos. O ganho é real; sua relevância
+prática para uma aplicação de análise de futebol é discutível e depende do uso.
+
+\subsection{O que a atenção está olhando}
+
+O resultado anterior mostra \emph{que} a atenção contribui. Resta saber
+\emph{como}. Mediu-se a atenção que o token \texttt{[CLS]} dirige a cada jogador,
+normalizada pela atenção que ele receberia sob distribuição uniforme: o valor 1,0
+indica ``observado como um jogador qualquer da cena''.
+
+\begin{table}[ht]
+\centering
+\caption{Razão de atenção por papel na cena. Transformer, semente 0, média das
+2 camadas e 4 cabeças, sobre 14.935 finalizações.}
+\label{tab:atencao}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+Papel na cena & Razão média & Mediana \\
+\midrule
+Bloqueador (adversário na linha do chute) & \textbf{2,76$\times$} & 2,45$\times$ \\
+Goleiro adversário & \textbf{1,38$\times$} & 1,21$\times$ \\
+Outro adversário & 0,92$\times$ & 0,96$\times$ \\
+Companheiro & 0,75$\times$ & 0,74$\times$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.85\textwidth]{figuras/EXP-005-atencao-papeis.png}
+\caption{Para quem o token \texttt{[CLS]} olha. A linha vertical marca a atenção
+que um jogador receberia por acaso.}
+\label{fig:atencao}
+\end{figure}
+
+O ordenamento da Tabela~\ref{tab:atencao}, visível na Figura~\ref{fig:atencao}
+-- bloqueador, goleiro, adversário distante, companheiro --
+é exatamente a hierarquia que a literatura de xG codifica manualmente. O modelo
+nunca recebeu essa informação: cada token contém geometria e um indicador de
+papel, mas \textbf{nada informa que um jogador está entre o chutador e o gol}.
+Essa relação é intrinsecamente par a par, e é o que apenas a atenção pode
+representar -- o Deep Sets, por construção, não consegue.
+
+Ressalva importante: a análise é \textbf{correlacional}. Ela mostra onde a atenção
+se concentra, mas não demonstra que é dessa concentração que decorre o ganho em
+Brier. Uma ablação -- suprimir a atenção sobre os bloqueadores e medir a perda --
+fecharia o argumento causal e fica como trabalho futuro.
+
+% TODO: 3.5 estudo de caso qualitativo: Eurocopa 2024
 
 % =====================================================================
 \section{Lições Aprendidas}
@@ -232,12 +362,45 @@ AUC, valor da mesma ordem do desvio entre sementes.
 \textbf{Escalar os dados resolveu o que aparentava ser um problema de
 arquitetura.} Na prova de conceito, com 6.347 finalizações, os modelos neurais
 alcançavam AUC de aproximadamente 0,71 -- \emph{abaixo} do \emph{baseline} com
-atributos manuais (0,736). Com 99.746 finalizações, ambos os modelos neurais
-superam esse \emph{baseline} com folga. A conclusão precipitada de que ``a
-arquitetura não serve'' teria sido incorreta.
+atributos manuais (0,736). Com 99.746 finalizações, ambos superam esse
+\emph{baseline} com folga. A conclusão precipitada de que ``a arquitetura não
+serve'' teria sido incorreta.
 
-% TODO: 4.2 o que nao funcionou (tentativas T1-T4)
-% TODO: 4.3 o que eu faria diferente
+\textbf{A escolha da métrica alterou a conclusão científica.} A implementação
+inicial reportava apenas AUC. Sob essa métrica, o Transformer é ligeiramente
+\emph{pior} que o Deep Sets, e a conclusão seria que a atenção não contribui --
+um resultado negativo falso. Foi a adoção do Brier como critério de decisão,
+motivada pelo fato de xG ser uma probabilidade e não um ordenamento, que tornou o
+efeito visível. Uma decisão metodológica, tomada antes dos experimentos,
+determinou o que se pôde concluir.
+
+\subsection{O que não funcionou}
+
+\textbf{Trocar a métrica de seleção sem reescalar a tolerância.} Ao migrar o
+critério de parada antecipada de AUC para Brier, manteve-se o limiar de melhoria
+em $10^{-6}$ absoluto. Como a AUC opera em torno de 0,81 e o Brier em torno de
+0,076, o mesmo valor absoluto tornou-se relativamente dez vezes mais restritivo:
+praticamente qualquer flutuação era contabilizada como melhoria, a paciência não
+era acionada e o treino prosseguia até a última época, selecionando um estado já
+sobreajustado. O critério concebido para otimizar o Brier produziu Brier
+\emph{pior} (0,07646 contra 0,07627 na mesma semente). A correção para tolerância
+relativa recuperou o desempenho e reduziu o tempo de treino em cerca de 30\%.
+
+\textbf{Duas sementes não bastam, e a estabilidade aparente engana.} Com 2
+sementes, o Deep Sets apresentou amplitude de AUC de 0,0001, sugerindo
+extraordinária estabilidade. Com 5 sementes, a amplitude foi de 0,0019 -- dezenove
+vezes maior -- e a conclusão sobre sobreposição de faixas, obtida com a amostra
+menor, mostrou-se equivocada.
+
+\subsection{O que eu faria diferente}
+
+Verificaria a disponibilidade dos dados antes de prometê-los: a proposta previa a
+Copa do Mundo de 2026 como estudo de caso, mas a competição não havia sido
+publicada na base pública até a data de entrega. Registraria previsões e pesos dos
+modelos em disco desde o primeiro experimento -- sua ausência obrigou a
+retreinamentos que consumiram horas. E adotaria as métricas de calibração desde o
+início, em vez de reportar AUC e descobrir tardiamente que ela é cega justamente
+para a dimensão que define o problema.
 
 % =====================================================================
 \section*{Disponibilidade do código}

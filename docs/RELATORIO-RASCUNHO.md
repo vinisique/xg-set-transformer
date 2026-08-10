@@ -1,5 +1,10 @@
 # Relatório final — rascunho de trabalho
 
+> **Este rascunho ficou desatualizado.** A fonte da verdade do texto passou a ser
+> `relatorio/artigo.tex`, que já tem as seções 1 a 4 escritas com os resultados dos
+> EXP-000b, EXP-004b e EXP-005. Este arquivo permanece como registro de como o
+> relatório foi estruturado no início.
+
 > **Este é o rascunho, não a entrega.** A entrega é um PDF no template SBC, até 15
 > páginas, com link para o repositório. Este arquivo é onde o texto amadurece.
 >
