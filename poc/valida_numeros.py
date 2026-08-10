@@ -120,6 +120,32 @@ if e7:
     for c in e7["casos"]:
         confere(f"EXP-007 xG '{c['titulo'][:22]}'", c["xg"], 3, "EXP-007-completo.json")
 
+# ---------------------------------------------- EXP-008 (capacidade) --------
+e8 = carrega("EXP-008-completo.json")
+if e8:
+    import statistics as st8
+    for k, ms in e8["por_seed"].items():
+        confere(f"EXP-008 {k} Brier", st8.mean(m["brier"] for m in ms), 5,
+                "EXP-008-completo.json")
+        confere(f"EXP-008 {k} AUC", st8.mean(m["auc"] for m in ms), 4,
+                "EXP-008-completo.json")
+    for k, v in e8["parametros"].items():
+        confere(f"EXP-008 parametros {k}", v, 0, "EXP-008-completo.json")
+    for rot, tt in e8["testes_pareados"].items():
+        confere(f"EXP-008 dif {rot}", tt["diferenca"], 5, "EXP-008-completo.json")
+        confere(f"EXP-008 IC inf {rot}", tt["ic95"][0], 5, "EXP-008-completo.json")
+        confere(f"EXP-008 IC sup {rot}", tt["ic95"][1], 5, "EXP-008-completo.json")
+
+# ------------------------------------------------- EXP-009 (ablacao) --------
+e9 = carrega("EXP-009-completo.json")
+if e9:
+    for nome, c in e9["condicoes"].items():
+        confere(f"EXP-009 {nome} Brier", c["brier"], 5, "EXP-009-completo.json")
+        confere(f"EXP-009 {nome} AUC", c["auc"], 4, "EXP-009-completo.json")
+        if c["delta_brier"]:
+            confere(f"EXP-009 {nome} delta", c["delta_brier"], 5,
+                    "EXP-009-completo.json")
+
 # ------------------------------------------------------------- resultado ----
 print(f"conferidos com sucesso: {ok}")
 for a in ausentes:

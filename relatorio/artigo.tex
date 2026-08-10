@@ -42,7 +42,11 @@ match-clustered paired bootstrap) but \textbf{not} ranking ability (AUC
 $p = 0.797$). Attention maps show the model concentrating on blockers
 (2.76$\times$ chance) and the goalkeeper (1.38$\times$). We note explicitly that
 an ``in the shot triangle'' flag is itself a per-player input feature, so this
-shows the model \emph{weighting} that cue, not rediscovering the geometry.
+shows the model \emph{weighting} that cue, not rediscovering the geometry. A
+causal ablation confirms dependence: blocking the model from attending to
+blockers degrades Brier 7.9$\times$ more than suppressing the same number of
+random players. A capacity-matched Deep Sets (38{,}977 parameters) does not
+reproduce the gain, ruling out model size as the explanation.
 \end{abstract}
 
 \begin{resumo}
@@ -60,7 +64,11 @@ concentrando-se nos bloqueadores (2,76$\times$ o acaso) e no goleiro
 (1,38$\times$). Registra-se explicitamente que o indicador ``dentro do triângulo
 do chute'' é ele próprio um atributo de entrada por jogador, de modo que o
 resultado mostra o modelo \emph{ponderando} essa pista, e não redescobrindo a
-geometria.
+geometria. Uma ablação causal confirma a dependência: proibir o modelo de
+observar os bloqueadores degrada o Brier 7,9 vezes mais do que suprimir a mesma
+quantidade de jogadores sorteados. Um Deep Sets com capacidade equiparada
+(38.977 parâmetros) não reproduz o ganho, o que afasta a explicação por
+tamanho.
 \end{resumo}
 
 % =====================================================================
@@ -179,7 +187,7 @@ PyTorch.
 
 \begin{figure}[ht]
 \centering
-\includegraphics[width=\textwidth]{figuras/arquitetura.png}
+\includegraphics[width=0.96\textwidth]{figuras/arquitetura.png}
 \caption{Da cena ao xG. Cada jogador do \emph{freeze-frame} torna-se um token de
 14 atributos; um token aprendido \texttt{[CLS]} agrega a informacao e alimenta a
 saida sigmoide. A ausencia de \emph{positional encoding} torna a previsao
@@ -246,8 +254,7 @@ jogadores entre si.
 Transformer possui \textbf{38.737} parâmetros contra \textbf{10.273} do Deep Sets
 -- 3,8 vezes mais --, de modo que a diferença entre os dois não isola a atenção,
 mas sim ``atenção mais capacidade''. Um controle com Deep Sets de capacidade
-equiparada não foi executado e permanece como a lacuna mais séria deste
-protocolo. Segunda: o degrau B2$\rightarrow$DS acrescenta simultaneamente a
+equiparada foi conduzido e é apresentado na Seção~\ref{sec:capacidade}. Segunda: o degrau B2$\rightarrow$DS acrescenta simultaneamente a
 \emph{cena completa} e a \emph{não-linearidade}, pois o B2 é linear. Parte do
 salto atribuído à representação por token é, portanto, atribuível apenas à classe
 de modelo, e a separação exigiria um \emph{baseline} não-linear sobre os mesmos
@@ -324,7 +331,7 @@ saldo positivo. A Figura~\ref{fig:calib} mostra as quatro curvas.
 
 \begin{figure}[ht]
 \centering
-\includegraphics[width=\textwidth]{figuras/EXP-000-calibracao.png}
+\includegraphics[width=0.88\textwidth]{figuras/EXP-000-calibracao.png}
 \caption{Curva de calibração e Brier \emph{score}. À esquerda, a frequência
 observada de gol contra o xG previsto, por decil.}
 \label{fig:calib}
@@ -425,7 +432,7 @@ valor-\emph{p} & $<$ 0,001 & 0,797 \\
 
 \begin{figure}[ht]
 \centering
-\includegraphics[width=\textwidth]{figuras/EXP-004-bootstrap.png}
+\includegraphics[width=0.82\textwidth]{figuras/EXP-004-bootstrap.png}
 \caption{Distribuição \emph{bootstrap} da diferença de Brier. As 2.000 reamostras
 situam-se integralmente à esquerda de zero.}
 \label{fig:boot}
@@ -470,6 +477,45 @@ Some-se a isso a diferença de capacidade declarada na Seção 2.4: o resultado
 honesto é que \textbf{a atenção, somada a 3,8 vezes mais parâmetros, produz um
 ganho pequeno e consistente na qualidade da probabilidade, e nenhum na
 ordenação}.
+
+\subsection{O ganho é atenção ou capacidade?}\label{sec:capacidade}
+
+O Transformer possui 3,8 vezes os parâmetros do Deep Sets, de modo que a
+comparação anterior não isola a atenção. Para separar os dois efeitos, treinou-se
+um Deep Sets com dimensão 96, que totaliza \textbf{38.977} parâmetros contra
+38.737 do Transformer -- equiparação de 100,6\,\% --, sob protocolo idêntico e
+com as mesmas cinco sementes.
+
+\begin{table}[ht]
+\centering
+\caption{Controle de capacidade. Cinco sementes por modelo; \emph{bootstrap}
+pareado agrupado por partida.}
+\label{tab:capacidade}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+Modelo & Parâmetros & Brier & AUC \\
+\midrule
+DS original (dim 48) & 10.273 & 0,07655 $\pm$ 0,00008 & \textbf{0,8146} $\pm$ 0,0007 \\
+DS largo (dim 96) & 38.977 & 0,07670 $\pm$ 0,00005 & 0,8131 $\pm$ 0,0010 \\
+TF (dim 48) & 38.737 & \textbf{0,07624} $\pm$ 0,00006 & 0,8141 $\pm$ 0,0011 \\
+\midrule
+\multicolumn{4}{@{}l}{\emph{Diferenças de Brier entre combinações das 5 sementes}} \\
+TF $-$ DS largo & & $-$0,00073 & IC [$-$0,00101; $-$0,00045] \\
+TF $-$ DS original & & $-$0,00056 & IC [$-$0,00081; $-$0,00031] \\
+DS largo $-$ DS original & & $+$0,00018 & IC [$+$0,00002; $+$0,00034] \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A Tabela~\ref{tab:capacidade} \textbf{refuta} a explicação por capacidade. Equiparar os parâmetros
+não aproximou o Deep Sets do Transformer: afastou. A vantagem do Transformer
+\emph{cresce} de $-$0,00056 para $-$0,00073 quando a comparação se torna justa, e
+o intervalo de confiança não cruza zero.
+
+Há ainda um achado próprio: \textbf{ampliar a capacidade do Deep Sets o piora}
+($+$0,00018 de Brier, com intervalo estritamente positivo). Sem o mecanismo de
+atenção, os parâmetros adicionais não encontram estrutura a explorar e o modelo
+sobreajusta.
 
 \subsection{O que a atenção está olhando}
 
@@ -527,8 +573,58 @@ camada operam sobre representações já contextualizadas, de modo que ``atenç�
 alta'' não equivale a ``importância'' -- ponto amplamente discutido na literatura
 sobre atenção como explicação. E os valores provêm de \textbf{uma única semente},
 com média sobre 2 camadas e 4 cabeças, o que pode cancelar papéis distintos. A
-ablação causal -- suprimir a atenção sobre os bloqueadores e medir a perda, nas
-cinco sementes -- é o teste que fecharia o argumento e não foi executado.
+média sobre 2 camadas e 4 cabeças pode cancelar papéis distintos entre elas.
+
+\subsubsection*{Ablação causal}
+
+Para ir além da correlação, a atenção que o \texttt{[CLS]} dirige a um grupo foi
+\textbf{suprimida} -- zerada e com a linha renormalizada, de modo que o modelo
+continua vendo uma distribuição válida, porém proibido de observar aqueles
+jogadores. Mede-se então a degradação do Brier. O controle é essencial: suprimir
+jogadores sempre causa alguma perda, e a pergunta é se suprimir \emph{estes}
+causa mais.
+
+\begin{table}[ht]
+\centering
+\caption{Ablação da atenção do \texttt{[CLS]}. Transformer, semente 0,
+14.935 finalizações.}
+\label{tab:ablacao}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+Grupo suprimido & Brier & $\Delta$ vs. intacto & AUC \\
+\midrule
+nenhum (referência) & 0,07612 & --- & 0,8159 \\
+\textbf{Bloqueadores} & 0,07701 & \textbf{$+$0,00088} & \textbf{0,8064} \\
+Goleiro & 0,07671 & $+$0,00059 & 0,8145 \\
+\emph{Controle:} sorteados, mesma quantidade & 0,07624 & $+$0,00011 & 0,8148 \\
+Companheiros & 0,07618 & $+$0,00005 & 0,8153 \\
+Todos os jogadores & 0,10194 & $+$0,02582 & 0,7951 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.9\textwidth]{figuras/EXP-009-ablacao.png}
+\caption{Degradação do Brier ao proibir o \texttt{[CLS]} de observar cada grupo.
+A barra cinza é o controle: mesma quantidade de jogadores, sorteados.}
+\label{fig:ablacao}
+\end{figure}
+
+Na Tabela~\ref{tab:ablacao}, ilustrada pela Figura~\ref{fig:ablacao},
+suprimir os bloqueadores custa $+$0,00088 de Brier -- \textbf{7,9 vezes} o custo
+de suprimir a mesma quantidade de jogadores sorteados ($+$0,00011). A AUC cai de
+0,8159 para 0,8064, contra 0,8148 no controle. A evidência, portanto, \textbf{não
+é apenas correlacional}: o desempenho depende causalmente dessa atenção.
+
+Dois aspectos reforçam a leitura. O efeito ($+$0,00088) é \emph{maior} que a
+própria vantagem do Transformer sobre o Deep Sets equiparado (0,00073), o que
+indica mecanismo estruturante e não marginal. E companheiros custam praticamente
+nada ($+$0,00005) -- coerente, pois em uma finalização quem obstrui são os
+adversários.
+
+Permanece a limitação de \textbf{uma única semente}, a única cujos pesos foram
+preservados, e a supressão atua nas duas camadas simultaneamente.
 
 \subsection{Estudo de caso: Eurocopa 2024}
 
@@ -545,7 +641,7 @@ quantitativa, papel que cabe à Seção anterior.
 
 \begin{figure}[ht]
 \centering
-\includegraphics[width=\textwidth]{figuras/EXP-007-eurocopa.png}
+\includegraphics[width=0.98\textwidth]{figuras/EXP-007-eurocopa.png}
 \caption{Três cenas reais da Eurocopa 2024. O tamanho de cada jogador é
 proporcional à atenção que o token \texttt{[CLS]} lhe dirige. Os casos foram
 selecionados por critério automático, não manualmente.}
@@ -628,7 +724,11 @@ leitura crítica do próprio código.
 \textbf{A escada isolava menos do que eu afirmava.} O Transformer tem 3,8 vezes
 mais parâmetros que o Deep Sets, e o degrau B2$\rightarrow$DS mistura
 representação com não-linearidade. Ambos os confundimentos estavam presentes
-desde o desenho do protocolo e só foram percebidos na revisão final.
+desde o desenho do protocolo e só foram percebidos na revisão final. O primeiro
+foi então medido (Seção~\ref{sec:capacidade}) e revelou-se favorável à conclusão
+-- mas isso é sorte, não método: se a capacidade explicasse o efeito, o trabalho
+teria sustentado por semanas uma conclusão infundada. O controle deveria ter sido
+parte do desenho, não da correção.
 
 \subsection{O que eu faria diferente}
 
