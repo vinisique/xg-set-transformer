@@ -202,6 +202,43 @@ class Former(nn.Module):
         return self.head(self.tf(h, src_key_padding_mask=p)[:, 0]).squeeze(-1)
 
 
+@torch.no_grad()
+def atencao_do_cls(model, x, pad):
+    """Devolve (logit, pesos_de_atencao) refazendo o forward do Former a mao.
+
+    `nn.TransformerEncoder` nao expoe os pesos de atencao, entao replicamos o
+    bloco pre-LN (norm_first=True) chamando `self_attn` com need_weights=True.
+
+    Saidas:
+      logit : [B]
+      attn  : [B, camadas, cabecas, 23] — quanto o [CLS] olhou para cada token
+              (indice 0 = o proprio CLS, 1 = chutador, 2..22 = freeze-frame)
+
+    A funcao AFIRMA que o logit reproduzido bate com `model(x, pad)`. Se a
+    replicacao divergir do forward real, a analise estaria descrevendo um modelo
+    que nao e o avaliado — por isso a verificacao e obrigatoria, nao opcional.
+    """
+    model.eval()
+    h = torch.cat([model.cls.expand(len(x), -1, -1), model.proj(x)], 1)
+    p = torch.cat([torch.zeros(len(x), 1, dtype=torch.bool), pad], 1)
+
+    pesos = []
+    for camada in model.tf.layers:
+        normed = camada.norm1(h)
+        saida, w = camada.self_attn(normed, normed, normed,
+                                    key_padding_mask=p,
+                                    need_weights=True, average_attn_weights=False)
+        pesos.append(w[:, :, 0, :])          # linha do [CLS]: [B, cabecas, 23]
+        h = h + saida                        # dropout e identidade em eval
+        h = h + camada._ff_block(camada.norm2(h))
+
+    logit = model.head(h[:, 0]).squeeze(-1)
+    esperado = model(x, pad)
+    erro = (logit - esperado).abs().max().item()
+    assert erro < 1e-4, f"replicacao do forward divergiu do modelo (erro {erro:.2e})"
+    return logit, torch.stack(pesos, 1)
+
+
 def treina(model, D, seed, criterio="brier", epocas=60, paciencia=8, batch=256,
            tol_rel=1e-4):
     """Treina e devolve as previsoes de TESTE do melhor estado de validacao.
@@ -258,3 +295,21 @@ def treina(model, D, seed, criterio="brier", epocas=60, paciencia=8, batch=256,
     model.eval()
     with torch.no_grad():
         return torch.sigmoid(model(X[ite], PAD[ite])).numpy()
+
+
+def treina_e_guarda(model, D, seed, caminho, **kw):
+    """Como treina(), mas grava os PESOS em disco e os reaproveita se existirem.
+
+    Os experimentos anteriores guardavam so as previsoes. Para inspecionar
+    atencao (EXP-005) e preciso o modelo em si — e retreinar 10 minutos a cada
+    ajuste de figura seria desperdicio.
+    """
+    import os
+    if os.path.exists(caminho):
+        model.load_state_dict(torch.load(caminho, weights_only=True))
+        model.eval()
+        return model, True
+    treina(model, D, seed, **kw)      # deixa o model com o melhor estado carregado
+    os.makedirs(os.path.dirname(caminho), exist_ok=True)
+    torch.save(model.state_dict(), caminho)
+    return model, False
