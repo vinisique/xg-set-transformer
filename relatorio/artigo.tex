@@ -146,10 +146,12 @@ excluir pênaltis e lances sem \emph{freeze-frame}, restam 99.746 finalizações
         direção}. Um defensor parado e outro em corrida de recuperação são
         indistinguíveis para o modelo. A velocidade do chutador é atributo usado na literatura que dispõe de rastreamento~\cite{anzer2021goal,lucey2015quality}, e está fora de alcance aqui.
   \item \textbf{30,7\% das finalizações vêm de competições femininas} e cerca de
-        37\% de apenas quatro temporadas 2015/16 de ligas europeias. As taxas de
-        gol dos dois grupos são praticamente iguais (10,4\% contra 10,2\%), o que
-        sustenta tratá-los conjuntamente, mas a decisão é declarada e não
-        silenciosa.
+        37\% de apenas quatro temporadas 2015/16 de ligas europeias. Tratá-las
+        conjuntamente não se justifica pela semelhança das taxas de gol (10,4\%
+        contra 10,2\%) -- taxa marginal igual não implica relação condicional
+        igual. A justificativa é empírica e está na Seção~\ref{sec:capacidade}:
+        a conclusão do trabalho se mantém, com intervalo que não cruza zero, em
+        cada um dos quatro recortes avaliados.
   \item A média é de \textbf{13,1 jogadores visíveis por cena}, não 22. O
         mascaramento das posições vazias é, portanto, o caso comum e não a
         exceção.
@@ -187,7 +189,7 @@ PyTorch.
 
 \begin{figure}[ht]
 \centering
-\includegraphics[width=0.96\textwidth]{figuras/arquitetura.png}
+\includegraphics[width=0.88\textwidth]{figuras/arquitetura.png}
 \caption{Da cena ao xG. Cada jogador do \emph{freeze-frame} torna-se um token de
 14 atributos; um token aprendido \texttt{[CLS]} agrega a informacao e alimenta a
 saida sigmoide. A ausencia de \emph{positional encoding} torna a previsao
@@ -286,43 +288,52 @@ consecutivas atribui o mérito a um componente específico.
 \begin{table}[ht]
 \centering
 \caption{Desempenho no conjunto de teste (14.935 finalizações), divisão por
-partida. Modelos neurais: combinação de 2 sementes. ECE = erro de calibração
-esperado, em decis de xG previsto.}
+partida. Modelos neurais: combinação de 5 sementes. ECE = erro de calibração
+esperado, em decis de xG previsto. B2-GBM usa \textbf{os mesmos sete atributos}
+do B2, mudando apenas a classe de modelo.}
 \label{tab:resultados}
-\begin{tabular}{@{}lrrrr@{}}
+\begin{tabular}{@{}lrrr@{}}
 \toprule
-Modelo & AUC & \emph{Log loss} & Brier & ECE \\
+Modelo & AUC & Brier & ECE \\
 \midrule
-B1 & 0,7653 & 0,2887 & 0,08237 & 0,0076 \\
-B2 & 0,7961 & 0,2739 & 0,07846 & \textbf{0,0035} \\
-DS & 0,8149 & 0,2655 & 0,07643 & 0,0082 \\
-TF & \textbf{0,8169} & \textbf{0,2644} & \textbf{0,07609} & 0,0064 \\
+B1 -- logística & 0,7653 & 0,08237 & 0,0076 \\
+B2 -- logística + interação & 0,7961 & 0,07846 & 0,0035 \\
+B2-GBM -- mesmos atributos, não-linear & 0,8069 & 0,07710 & \textbf{0,0018} \\
+DS -- Deep Sets (tokens) & 0,8160 & 0,07635 & 0,0070 \\
+TF -- Transformer (tokens) & \textbf{0,8162} & \textbf{0,07579} & 0,0043 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \begin{figure}[ht]
 \centering
-\includegraphics[width=\textwidth]{figuras/EXP-000-escada.png}
-\caption{Ganho de cada degrau da escada. Cada segmento representa o incremento
-sobre o degrau anterior. Optou-se por marcadores em vez de barras porque as AUCs
-ocupam a faixa estreita entre 0,76 e 0,82: barras a partir da origem tornariam as
-diferenças invisíveis, e barras truncadas distorceriam a proporção.}
+\includegraphics[width=0.92\textwidth]{figuras/EXP-010-nao-linear.png}
+\caption{Desempenho dos cinco modelos. Optou-se por marcadores em vez de barras
+porque as AUCs ocupam a faixa estreita entre 0,76 e 0,82: barras a partir da
+origem tornariam as diferenças invisíveis, e barras truncadas distorceriam a
+proporção.}
 \label{fig:escada}
 \end{figure}
 
-A Figura~\ref{fig:escada} torna esse padrão visível. O salto de B2 para Deep Sets
-(+0,0183 de AUC) mostra que fornecer a cena inteira
-ao modelo supera resumi-la em atributos manuais: a representação por token tem
-valor claro. Já o degrau seguinte, de Deep Sets para Transformer, é de apenas
-+0,0014 de AUC.
+A Figura~\ref{fig:escada} torna o padrão visível. Fornecer a cena inteira ao
+modelo supera resumi-la em atributos manuais -- mas \textbf{menos do que a
+comparação com o B2 linear sugere}. O B2-GBM, que usa exatamente os mesmos sete
+atributos manuais e difere apenas na classe de modelo, alcança AUC 0,8069 e Brier
+0,07710. Da distância entre o B2 e o Deep Sets, a \textbf{não-linearidade sozinha
+explica 54,5\,\% em AUC e 64,6\,\% em Brier}.
+
+A representação por token, portanto, agrega valor real, porém aproximadamente
+\emph{metade} do que uma escada iniciada em um \emph{baseline} linear indicaria.
+Registre-se ainda que o B2-GBM é o \textbf{modelo mais bem calibrado do estudo}
+(ECE 0,0018): um \emph{gradient boosting} sobre sete atributos construídos
+manualmente entrega a melhor calibração entre todos os modelos avaliados.
 
 \subsection{Calibração}
 
 A Tabela~\ref{tab:resultados} revela um padrão que a AUC isoladamente esconde:
-\textbf{o B2 é o modelo mais bem calibrado do conjunto} (ECE 0,0035), apesar de
-ter o segundo pior Brier. Os modelos neurais apresentam Brier melhor e calibração
-pior.
+\textbf{os dois \emph{baselines} de atributos manuais são os mais bem calibrados
+do conjunto} (ECE 0,0018 no B2-GBM e 0,0035 no B2), apesar de terem Brier pior
+que os modelos neurais. Estes apresentam Brier melhor e calibração pior.
 
 Não há contradição. O Brier decompõe-se em \emph{calibração} -- as probabilidades
 correspondem às frequências observadas? -- e \emph{refinamento} -- o modelo separa
@@ -331,7 +342,7 @@ saldo positivo. A Figura~\ref{fig:calib} mostra as quatro curvas.
 
 \begin{figure}[ht]
 \centering
-\includegraphics[width=0.88\textwidth]{figuras/EXP-000-calibracao.png}
+\includegraphics[width=0.80\textwidth]{figuras/EXP-000-calibracao.png}
 \caption{Curva de calibração e Brier \emph{score}. À esquerda, a frequência
 observada de gol contra o xG previsto, por decil.}
 \label{fig:calib}
@@ -459,7 +470,13 @@ variabilidade de \emph{inicialização}. A diferença entre modelos individuais
 ($-$0,00031) é pouco mais da metade da diferença entre as combinações
 ($-$0,00056): parte do efeito anunciado é o Transformer beneficiar-se mais da
 média de sementes -- suas previsões são mais dispersas entre inicializações --,
-e não a atenção.
+e não a atenção. Refazendo o mesmo teste \textbf{semente a semente}, o intervalo
+de confiança cruza zero nas \textbf{cinco} inicializações (menor valor-\emph{p}:
+0,053). A significância, portanto, existe para o conjunto combinado, não para um
+modelo individual. Em contrapartida, o sinal favorece o Transformer em 5 de 5
+sementes, o que sob um teste de sinal corresponderia a $p \approx 0{,}06$:
+sugestivo, e coerente com um efeito real porém pequeno demais para ser detectado
+por uma única inicialização com 595 partidas.
 
 Segunda, \textbf{o mecanismo alegado depende do recorte}. Na combinação das
 sementes o Transformer é o mais bem calibrado (ECE 0,0043 contra 0,0070); nos
@@ -517,6 +534,19 @@ Há ainda um achado próprio: \textbf{ampliar a capacidade do Deep Sets o piora}
 atenção, os parâmetros adicionais não encontram estrutura a explorar e o modelo
 sobreajusta.
 
+\subsubsection*{A conclusão vale em todos os recortes}
+
+A vantagem do Transformer foi reavaliada em quatro subconjuntos do teste, e em
+nenhum o intervalo de confiança cruza zero: futebol feminino ($-$0,00086, 4.443
+finalizações), futebol masculino ($-$0,00043, 10.492), temporadas 2015/16
+($-$0,00053, 6.070) e demais competições ($-$0,00058, 8.865). O efeito é cerca de
+duas vezes maior no futebol feminino, o que se registra sem investigar.
+
+Cabe a ressalva de que os quatro recortes provêm do mesmo conjunto de 80
+competições-temporada. Eles medem robustez interna, não generalização para um
+torneio não observado -- para isso seria necessário um \emph{hold-out} por
+competição, que não foi conduzido.
+
 \subsection{O que a atenção está olhando}
 
 O resultado anterior mostra \emph{que} a atenção contribui. Resta saber
@@ -543,7 +573,7 @@ Companheiro & 0,75$\times$ & 0,74$\times$ \\
 
 \begin{figure}[ht]
 \centering
-\includegraphics[width=0.85\textwidth]{figuras/EXP-005-atencao-papeis.png}
+\includegraphics[width=0.74\textwidth]{figuras/EXP-005-atencao-papeis.png}
 \caption{Para quem o token \texttt{[CLS]} olha. A linha vertical marca a atenção
 que um jogador receberia por acaso.}
 \label{fig:atencao}
@@ -603,15 +633,7 @@ Todos os jogadores & 0,10194 & $+$0,02582 & 0,7951 \\
 \end{tabular}
 \end{table}
 
-\begin{figure}[ht]
-\centering
-\includegraphics[width=0.9\textwidth]{figuras/EXP-009-ablacao.png}
-\caption{Degradação do Brier ao proibir o \texttt{[CLS]} de observar cada grupo.
-A barra cinza é o controle: mesma quantidade de jogadores, sorteados.}
-\label{fig:ablacao}
-\end{figure}
-
-Na Tabela~\ref{tab:ablacao}, ilustrada pela Figura~\ref{fig:ablacao},
+Na Tabela~\ref{tab:ablacao},
 suprimir os bloqueadores custa $+$0,00088 de Brier -- \textbf{7,9 vezes} o custo
 de suprimir a mesma quantidade de jogadores sorteados ($+$0,00011). A AUC cai de
 0,8159 para 0,8064, contra 0,8148 no controle. A evidência, portanto, \textbf{não
@@ -641,7 +663,7 @@ quantitativa, papel que cabe à Seção anterior.
 
 \begin{figure}[ht]
 \centering
-\includegraphics[width=0.98\textwidth]{figuras/EXP-007-eurocopa.png}
+\includegraphics[width=0.94\textwidth]{figuras/EXP-007-eurocopa.png}
 \caption{Três cenas reais da Eurocopa 2024. O tamanho de cada jogador é
 proporcional à atenção que o token \texttt{[CLS]} lhe dirige. Os casos foram
 selecionados por critério automático, não manualmente.}

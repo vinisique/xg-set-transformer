@@ -67,9 +67,11 @@ e0 = carrega("EXP-000-completo.json")
 if e0:
     for k in ("B1", "B2", "DS", "TF"):
         m = e0["modelos"][k]["media_seeds"]
-        confere(f"EXP-000b {k} AUC", m["auc"], 4, "EXP-000-completo.json")
-        confere(f"EXP-000b {k} Brier", m["brier"], 5, "EXP-000-completo.json")
-        confere(f"EXP-000b {k} ECE", m["ece"], 4, "EXP-000-completo.json")
+        # EXP-000b (2 sementes) foi superado pelo EXP-010 (5 sementes):
+        # os numeros sairam do texto por decisao editorial, nao por erro
+        confere(f"EXP-000b {k} AUC", m["auc"], 4, "EXP-000-completo.json", False)
+        confere(f"EXP-000b {k} Brier", m["brier"], 5, "EXP-000-completo.json", False)
+        confere(f"EXP-000b {k} ECE", m["ece"], 4, "EXP-000-completo.json", False)
     confere("EXP-000b n teste", e0["n_teste"], 0, "EXP-000-completo.json")
 
 # ------------------------------------------------- EXP-004b (central) -------
@@ -145,6 +147,26 @@ if e9:
         if c["delta_brier"]:
             confere(f"EXP-009 {nome} delta", c["delta_brier"], 5,
                     "EXP-009-completo.json")
+
+# ------------------------------------------------ EXP-010 (nao-linear) ------
+e10 = carrega("EXP-010-completo.json")
+if e10:
+    for k, m in e10["modelos"].items():
+        confere(f"EXP-010 {k[:12]} AUC", m["auc"], 4, "EXP-010-completo.json")
+        confere(f"EXP-010 {k[:12]} Brier", m["brier"], 5, "EXP-010-completo.json")
+        confere(f"EXP-010 {k[:12]} ECE", m["ece"], 4, "EXP-010-completo.json")
+    fr = e10["fracao_do_salto_explicada_por_nao_linearidade"]
+    confere("EXP-010 fracao AUC", fr["auc"] * 100, 1, "EXP-010-completo.json")
+    confere("EXP-010 fracao Brier", fr["brier"] * 100, 1, "EXP-010-completo.json")
+
+# -------------------------------------------------- EXP-011 (robustez) ------
+e11 = carrega("EXP-011-completo.json")
+if e11:
+    menor_p = min(x["p"] for x in e11["por_semente"])
+    confere("EXP-011 menor p por semente", menor_p, 3, "EXP-011-completo.json")
+    for nome, g in e11["subgrupos"].items():
+        confere(f"EXP-011 {nome} dif", g["diferenca"], 5, "EXP-011-completo.json")
+        confere(f"EXP-011 {nome} n", g["n"], 0, "EXP-011-completo.json")
 
 # ------------------------------------------------------------- resultado ----
 print(f"conferidos com sucesso: {ok}")
