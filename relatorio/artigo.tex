@@ -164,7 +164,17 @@ dimensão 48, token
 \emph{padding} nas posições sem jogador. Saída sigmoide. Implementação em
 PyTorch.
 
-% TODO: figura do diagrama da arquitetura (cena -> tokens -> encoder -> xG)
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{figuras/arquitetura.png}
+\caption{Da cena ao xG. Cada jogador do \emph{freeze-frame} torna-se um token de
+14 atributos; um token aprendido \texttt{[CLS]} agrega a informacao e alimenta a
+saida sigmoide. A ausencia de \emph{positional encoding} torna a previsao
+invariante a permutacao dos jogadores.}
+\label{fig:arq}
+\end{figure}
+
+A Figura~\ref{fig:arq} resume o fluxo.
 
 \subsection{Protocolo experimental}
 
@@ -296,6 +306,68 @@ observada de gol contra o xG previsto, por decil.}
 \label{fig:calib}
 \end{figure}
 
+\subsubsection*{A recalibração não ajuda}
+
+Diante da diferença de ECE entre o B2 e os modelos neurais, testou-se recalibrar
+as saídas por \emph{Platt scaling} e por regressão isotônica, ajustando o
+calibrador no conjunto de \textbf{validação} e avaliando no de teste --
+ajustá-lo no teste reproduziria o vazamento que a divisão por partida existe
+para evitar.
+
+\begin{table}[ht]
+\centering
+\caption{Efeito da recalibração. Calibrador ajustado na validação, avaliação no
+teste, semente 0.}
+\label{tab:recal}
+\begin{tabular}{@{}llrr@{}}
+\toprule
+Modelo & Variante & Brier & ECE \\
+\midrule
+DS & sem calibração & \textbf{0,07653} & 0,0069 \\
+DS & Platt          & 0,07652 & \textbf{0,0055} \\
+DS & isotônica      & 0,07682 & 0,0065 \\
+\midrule
+TF & sem calibração & \textbf{0,07612} & 0,0076 \\
+TF & Platt          & 0,07613 & 0,0069 \\
+TF & isotônica      & 0,07633 & \textbf{0,0057} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+O resultado é negativo: o \emph{Platt scaling} é neutro em Brier e a regressão
+isotônica o \emph{piora} em ambos os modelos. Com evento raro e 15 mil pontos de
+validação, a flexibilidade da isotônica ajusta-se a ruído que não se repete no
+teste. Ambas reduzem modestamente o ECE, devolvendo em refinamento o que ganham
+em calibração.
+
+A explicação é que os modelos já saem calibrados: a entropia cruzada é uma regra
+de pontuação própria, de modo que otimizá-la já posiciona as probabilidades na
+escala correta~\cite{niculescu2005}. Os resultados reportados neste trabalho são,
+portanto, do modelo \textbf{sem recalibração}.
+
+\subsubsection*{Calibração agregada por partida}
+
+O teste mais próximo do uso real da métrica não é por finalização, e sim por
+partida: somando o xG previsto de todos os chutes de um jogo, o total corresponde
+aos gols efetivamente marcados?
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.72\textwidth]{figuras/EXP-006-agregada.png}
+\caption{Calibração agregada. Cada ponto é uma das 595 partidas do conjunto de
+teste; a linha escura é a média de gols observados por faixa de xG previsto.}
+\label{fig:agregada}
+\end{figure}
+
+Sobre as 595 partidas de teste, o Transformer prevê \textbf{1591,2} de xG total
+contra \textbf{1571} gols observados -- viés de \textbf{+1,3\,\%}. O Deep Sets
+fica em +1,5\,\%. O erro médio de 1,16 gol \emph{por partida} não indica falha do
+modelo: uma partida tem poucos gols e forte componente aleatório, e é
+precisamente por isso que o xG é uma métrica de agregação. A
+Figura~\ref{fig:agregada} mostra o padrão esperado -- a média por faixa acompanha
+a diagonal na região densa e regride ao centro nos extremos, onde há poucas
+partidas.
+
 \subsection{A atenção acrescenta algo? (questão central)}
 
 Deep Sets e Transformer recebem exatamente os mesmos tokens; apenas o segundo
@@ -394,7 +466,43 @@ se concentra, mas não demonstra que é dessa concentração que decorre o ganho
 Brier. Uma ablação -- suprimir a atenção sobre os bloqueadores e medir a perda --
 fecharia o argumento causal e fica como trabalho futuro.
 
-% TODO: 3.5 estudo de caso qualitativo: Eurocopa 2024
+\subsection{Estudo de caso: Eurocopa 2024}
+
+A proposta deste trabalho previa a Copa do Mundo de 2026 como estudo de caso.
+Em consulta à StatsBomb Open Data em 09/08/2026 verificou-se que a competição
+ainda não havia sido publicada -- a mais recente disponível é a Eurocopa
+Feminina de 2025. O estudo de caso foi então conduzido sobre a \textbf{Eurocopa
+2024}, o torneio de seleções mais recente da base.
+
+Utilizaram-se apenas as 166 finalizações do torneio que caíram no conjunto de
+\textbf{teste} (6 partidas, 15 gols). Trata-se de \textbf{análise qualitativa},
+não de avaliação: 15 gols é amostra pequena demais para sustentar conclusão
+quantitativa, papel que cabe à Seção anterior.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{figuras/EXP-007-eurocopa.png}
+\caption{Três cenas reais da Eurocopa 2024. O tamanho de cada jogador é
+proporcional à atenção que o token \texttt{[CLS]} lhe dirige. Os casos foram
+selecionados por critério automático, não manualmente.}
+\label{fig:caso}
+\end{figure}
+
+Os três casos da Figura~\ref{fig:caso} mostram o modelo \textbf{deslocando o foco
+conforme a cena}, sem que nenhum atributo informe qual jogador importa naquele
+lance. No chute de fora da área com o goleiro na trajetória, o goleiro concentra
+sozinho 32\,\% de toda a atenção dirigida aos jogadores, e o xG previsto é 0,035.
+Na finalização dentro da área com defensores atravessados, a atenção migra para
+os bloqueadores (49\,\%) e o goleiro cai para 5\,\%; apesar da proximidade da
+meta, o xG é de apenas 0,117. No lance de maior xG do torneio (0,750), dentro da
+pequena área e sem obstrução, a atenção \emph{dispersa-se}: nenhum jogador é
+determinante porque nada interfere na trajetória.
+
+O contraste entre o segundo e o terceiro casos resume o argumento do trabalho em
+uma imagem: mesma região do campo, xG seis vezes menor, e a diferença é visível
+na distribuição da atenção.
+
+
 
 % =====================================================================
 \section{Lições Aprendidas}
@@ -427,6 +535,14 @@ era acionada e o treino prosseguia até a última época, selecionando um estado
 sobreajustado. O critério concebido para otimizar o Brier produziu Brier
 \emph{pior} (0,07646 contra 0,07627 na mesma semente). A correção para tolerância
 relativa recuperou o desempenho e reduziu o tempo de treino em cerca de 30\%.
+
+\textbf{Recalibrar não melhorou nada.} Ao observar que o
+\emph{baseline} de regressão logística apresentava melhor ECE que os modelos
+neurais, previu-se que recalibrar traria ganho fácil em Brier. Não trouxe: o
+\emph{Platt scaling} foi neutro e a regressão isotônica piorou o Brier dos dois
+modelos (Tabela~\ref{tab:recal}). A hipótese estava errada, e a razão é
+instrutiva -- treinar com entropia cruzada já produz probabilidades calibradas,
+restando pouco a corrigir.
 
 \textbf{Duas sementes não bastam, e a estabilidade aparente engana.} Com 2
 sementes, o Deep Sets apresentou amplitude de AUC de 0,0001, sugerindo
