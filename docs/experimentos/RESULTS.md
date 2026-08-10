@@ -359,3 +359,75 @@ avaliado. Por isso a função afirma que o logit reproduzido bate com o do model
 - A análise é **correlacional**: mostra onde a atenção se concentra, não prova
   que é disso que vem o ganho de Brier. Uma ablação (zerar a atenção nos
   bloqueadores e medir a perda) fecharia o argumento causal.
+
+---
+
+## EXP-006 — calibração e calibração agregada (tentativa T1 do cartão 0002)
+
+- **Data:** 2026-08-09 · **Script:** `poc/exp006_calibracao.py`
+- **Fecha os pedidos nº 1 e nº 3** do feedback do professor.
+- **Protocolo:** calibradores ajustados na **validação**, avaliados no **teste**.
+  Ajustá-los no teste inflaria o resultado — seria o mesmo vazamento que o split
+  por partida existe para evitar, entrando pela porta dos fundos.
+
+### Parte 1 — efeito da calibração [medido]
+
+| Modelo | Variante | Brier | ECE |
+|---|---|---|---|
+| DS | sem calibração | **0,07653** | 0,0069 |
+| DS | Platt | 0,07652 | **0,0055** |
+| DS | isotônica | 0,07682 | 0,0065 |
+| TF | sem calibração | **0,07612** | 0,0076 |
+| TF | Platt | 0,07613 | 0,0069 |
+| TF | isotônica | 0,07633 | **0,0057** |
+
+![Efeito da calibração](figuras/EXP-006-calibracao.png)
+
+### Parte 2 — calibração agregada por partida [medido]
+
+| Modelo | xG total previsto | Gols observados | Viés | Erro médio por partida |
+|---|---|---|---|---|
+| DS | 1594,3 | 1571 | **+1,5 %** | 1,17 gol |
+| TF | 1591,2 | 1571 | **+1,3 %** | 1,16 gol |
+
+![Calibração agregada](figuras/EXP-006-agregada.png)
+
+## Leitura — e uma previsão minha que não se confirmou
+
+**A tentativa T1 do cartão `0002` FALHOU, e isso é o resultado.**
+
+Ao ver, no EXP-000b, que o B2 tinha ECE melhor que os modelos neurais, eu afirmei
+que havia "ganho fácil disponível" e que recalibrar melhoraria o Brier sem tocar
+na arquitetura. **Não melhorou.**
+
+- **Platt é neutro no Brier** (0,07653 → 0,07652 no DS; 0,07612 → 0,07613 no TF —
+  este último, ligeiramente pior).
+- **A isotônica piora o Brier nos dois modelos** (0,07682 e 0,07633). Com 15 mil
+  pontos de validação e evento raro, a flexibilidade dela vira sobreajuste: ela
+  se molda a ruído da validação que não se repete no teste.
+- Ambas melhoram o **ECE** de forma modesta (DS 0,0069 → 0,0055 com Platt;
+  TF 0,0076 → 0,0057 com isotônica).
+
+A explicação é que **os modelos já saem bem calibrados**. O treino com entropia
+cruzada é uma regra de pontuação própria: otimizá-la já empurra as probabilidades
+para a escala correta. Sobrou pouco para um recalibrador corrigir, e o pouco que
+ele corrige em ECE ele devolve em refinamento.
+
+**Consequência para o relatório:** reportamos o modelo **sem recalibração**. A
+tentativa de calibrar está documentada como experimento que não funcionou, com a
+explicação do porquê — que é mais informativo que um ganho marginal.
+
+## A calibração agregada é o melhor resultado deste experimento
+
+Somado sobre 595 partidas, o xG previsto pelo Transformer dá **1591,2 contra 1571
+gols efetivamente marcados — viés de +1,3 %**. Em escala de temporada, o modelo
+acerta o total de gols com margem de pouco mais de um ponto percentual.
+
+O erro médio de 1,16 gol **por partida** não é falha do modelo: uma partida tem
+poucos gols e forte componente aleatório. É exatamente por isso que o xG existe —
+a informação está na média de muitos jogos, não em um jogo isolado. A figura
+mostra o padrão esperado: a média por faixa acompanha a diagonal na região densa
+e regride ao centro nos extremos, onde há poucas partidas.
+
+Esse é o teste mais próximo do uso real da métrica, e nenhuma das métricas
+anteriores conseguiria formulá-lo.
