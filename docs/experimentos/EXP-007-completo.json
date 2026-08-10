@@ -1,0 +1,33 @@
+{
+  "torneio": "UEFA Euro 2024",
+  "n_chutes": 166,
+  "gols": 15,
+  "xg_total": 16.569015502929688,
+  "xg_medio": 0.09981334954500198,
+  "casos": [
+    {
+      "titulo": "Atenção concentrada no goleiro",
+      "xg": 0.03486040234565735,
+      "gol": 0,
+      "atencao_goleiro": 0.3174459934234619,
+      "atencao_bloqueadores": 0.0,
+      "jogadores_visiveis": 19
+    },
+    {
+      "titulo": "Atenção concentrada nos bloqueadores",
+      "xg": 0.11669580638408661,
+      "gol": 0,
+      "atencao_goleiro": 0.05127089470624924,
+      "atencao_bloqueadores": 0.48566970229148865,
+      "jogadores_visiveis": 15
+    },
+    {
+      "titulo": "Maior xG previsto do torneio",
+      "xg": 0.7498624920845032,
+      "gol": 1,
+      "atencao_goleiro": 0.02905747853219509,
+      "atencao_bloqueadores": 0.0,
+      "jogadores_visiveis": 17
+    }
+  ]
+}

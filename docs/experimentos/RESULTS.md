@@ -431,3 +431,63 @@ e regride ao centro nos extremos, onde há poucas partidas.
 
 Esse é o teste mais próximo do uso real da métrica, e nenhuma das métricas
 anteriores conseguiria formulá-lo.
+
+---
+
+## EXP-007 — estudo de caso qualitativo: Eurocopa 2024
+
+- **Data:** 2026-08-09 · **Script:** `poc/exp007_estudo_caso.py`
+- **Fecha o pedido nº 7** do professor, com a substituição decidida no cartão
+  `0003` (a Copa de 2026 não foi publicada na StatsBomb).
+- **Recorte:** apenas finalizações do conjunto de **teste** — 166 chutes, 15 gols,
+  6 partidas. Usar lances de treino tornaria a análise bonita e vazia.
+
+### Evidência visual
+
+![Estudo de caso Eurocopa 2024](figuras/EXP-007-eurocopa.png)
+
+Cada painel é uma cena real. O tamanho de cada jogador é proporcional à atenção
+que o token `[CLS]` dirige a ele.
+
+| Caso | xG previsto | Desfecho | Atenção no goleiro | Atenção nos bloqueadores |
+|---|---|---|---|---|
+| Atenção no goleiro | 0,035 | sem gol | **0,32** | 0,00 |
+| Atenção nos bloqueadores | 0,117 | sem gol | 0,05 | **0,49** |
+| Maior xG do torneio | 0,750 | **gol** | 0,03 | 0,00 |
+
+## Leitura
+
+Os três casos mostram o modelo **mudando de foco conforme a cena**, sem que nada
+no token diga qual jogador importa naquele lance:
+
+- **Chute de fora da área com o goleiro na trajetória.** O goleiro sozinho recebe
+  32 % de toda a atenção dirigida aos jogadores. O modelo prevê xG 0,035 — o
+  chute não foi gol.
+- **Finalização dentro da área com defensores atravessados.** A atenção migra
+  para os bloqueadores, que somam 49 %, e o goleiro cai para 5 %. Apesar da
+  proximidade do gol, o xG previsto é apenas 0,117: a obstrução derruba a
+  probabilidade, e o chute não foi gol.
+- **Maior xG do torneio (0,750), dentro da pequena área e sem obstrução.** A
+  atenção se dispersa — nenhum jogador em particular importa, porque não há nada
+  atrapalhando. O chute foi gol.
+
+O contraste entre o segundo e o terceiro caso é o argumento em uma imagem:
+**mesma região do campo, xG seis vezes menor, e a diferença aparece na atenção.**
+
+### Contexto agregado
+
+Nas 166 finalizações, o xG somado é 16,6 contra 15 gols observados (+10,5 %).
+**Esse número não vale como avaliação:** 15 gols é amostra pequena demais, e o
+desvio esperado por acaso é dessa ordem. A avaliação quantitativa é o EXP-006,
+com 595 partidas e viés de +1,3 %. Aqui o número serve apenas para situar o
+leitor, e o professor pediu explicitamente que a análise da Copa fosse tratada
+como qualitativa.
+
+## Limitações
+
+- Casos escolhidos **por critério automático** (maior atenção no goleiro, maior
+  atenção nos bloqueadores, maior xG), não a dedo. Isso evita seleção conveniente,
+  mas também não garante que sejam os lances mais didáticos.
+- Uma única semente do modelo.
+- A leitura de cada cena é interpretativa. A evidência quantitativa de que o
+  modelo atende a goleiro e bloqueadores é o EXP-005, sobre 14.935 chutes.
