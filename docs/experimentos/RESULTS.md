@@ -610,3 +610,47 @@ quem atrapalha são os adversários.
   retreinar, cerca de uma hora.
 - A supressão age nas **duas camadas** simultaneamente; não se separou o papel de
   cada uma nem de cada cabeça.
+
+---
+
+## EXP-010 — quanto do salto é representação e quanto é não-linearidade?
+
+- **Data:** 2026-08-10 · **Script:** `poc/exp010_baseline_nao_linear.py`
+- **Motivo:** o degrau B2 → Deep Sets acrescenta **duas** coisas ao mesmo tempo —
+  a cena completa **e** a não-linearidade, porque o B2 é uma regressão logística.
+  Comparar linear com rede neural compara também classes de modelo.
+- **Controle:** *gradient boosting* sobre **exatamente os mesmos 7 atributos** do
+  B2. Número de árvores escolhido pela **nossa** validação (split por partida);
+  deixar o `sklearn` separar sua própria fração embaralharia chutes da mesma
+  partida entre treino e validação.
+
+### Resultado [medido]
+
+| Modelo | AUC | Brier | ECE |
+|---|---|---|---|
+| B1 — logística | 0,7653 | 0,08237 | 0,0076 |
+| B2 — logística + interação | 0,7961 | 0,07846 | 0,0035 |
+| **B2-GBM — mesmos 7 atributos, não-linear** | **0,8069** | **0,07710** | **0,0018** |
+| DS — Deep Sets (tokens) | 0,8160 | 0,07635 | 0,0070 |
+| TF — Transformer (tokens) | 0,8162 | **0,07579** | 0,0043 |
+
+![Representação vs não-linearidade](figuras/EXP-010-nao-linear.png)
+
+## Leitura — o achado enfraquece uma afirmação do trabalho
+
+**Da distância entre B2 e Deep Sets, a não-linearidade sozinha explica 54,5 % em
+AUC e 64,6 % em Brier.** Ou seja: mais da metade do que o relatório atribuía à
+"representação por token" é, na verdade, efeito de trocar um modelo linear por um
+não-linear — **sem tocar na representação**.
+
+O valor da representação por token continua existindo, mas é **cerca de metade**
+do que a escada original sugeria. A afirmação "dar ao modelo a cena inteira supera
+resumi-la em atributos manuais" precisa ser qualificada: supera, mas boa parte da
+vantagem medida vinha da classe de modelo.
+
+**E há um detalhe incômodo:** o B2-GBM é o **modelo mais bem calibrado de todos**
+(ECE 0,0018), com folga sobre os neurais. Um *gradient boosting* sobre sete
+atributos feitos à mão entrega a melhor calibração do estudo.
+
+Isso não afeta a questão central do trabalho — TF contra DS, que compartilham
+tokens e classe de modelo —, mas afeta diretamente a narrativa do degrau anterior.
