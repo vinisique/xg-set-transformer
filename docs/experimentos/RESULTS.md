@@ -491,3 +491,28 @@ como qualitativa.
 - Uma única semente do modelo.
 - A leitura de cada cena é interpretativa. A evidência quantitativa de que o
   modelo atende a goleiro e bloqueadores é o EXP-005, sobre 14.935 chutes.
+
+---
+
+## TESTE — invariância à permutação (verificação, não experimento)
+
+- **Data:** 2026-08-09 · **Script:** `poc/teste_invariancia.py`
+
+O relatório justifica a ausência de *positional encoding* afirmando que a cena é
+um **conjunto**: embaralhar os jogadores não pode alterar a previsão. Até aqui
+essa afirmação era **teórica**. Uma máscara mal aplicada, ou qualquer dependência
+de índice, quebraria a propriedade sem aviso — e a justificativa central da
+arquitetura cairia junto.
+
+**Resultado [medido]** — 2.000 cenas de teste, 5 permutações cada:
+
+| Modelo | Maior diferença absoluta na previsão | Veredito |
+|---|---|---|
+| Transformer | 1,19 × 10⁻⁷ | **invariante** |
+| Deep Sets | 1,19 × 10⁻⁷ | **invariante** |
+
+Diferenças dessa ordem são arredondamento de ponto flutuante em `float32`, não
+violação da propriedade.
+
+A afirmação da Seção 1.3 do relatório deixa de ser apenas argumentativa e passa a
+ter verificação empírica associada.
