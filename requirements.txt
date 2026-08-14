@@ -1,0 +1,26 @@
+# Dependencias diretas do projeto, com as versoes efetivamente usadas para
+# produzir os numeros do relatorio. Instalar com:
+#
+#     python -m venv .venv
+#     .venv/Scripts/activate        (Linux/macOS: source .venv/bin/activate)
+#     pip install -r requirements.txt
+#
+# Ambiente de referencia: Python 3.14.5, Windows 11 x86-64, CPU apenas (12
+# nucleos, sem GPU). O torch e a build +cpu: a instalacao padrao em Linux traz
+# CUDA e ocupa varios GB sem necessidade, ja que nada aqui usa GPU.
+#
+# As transitivas nao estao fixadas de proposito. Fixar a arvore inteira daria
+# uma reproducao mais estrita, mas quebraria a instalacao em qualquer sistema
+# operacional diferente deste — e o que precisa ser reproduzivel sao os
+# resultados, nao o disco.
+
+numpy==2.5.0
+torch==2.12.1+cpu
+scikit-learn==1.9.0
+matplotlib==3.11.1
+requests==2.34.2
+
+# Usadas apenas pela linha abandonada de PoC (previsao 1X2 a partir do
+# European Soccer Database, em poc/build_dataset*.py e poc/train.py). Nao sao
+# necessarias para nenhum experimento do relatorio.
+pandas==3.0.3

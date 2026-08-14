@@ -9,6 +9,13 @@ from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 import requests
 
+# ATENCAO: `master` e um alvo movel — a StatsBomb acrescenta competicoes ao
+# repositorio ao longo do tempo, entao rodar isto hoje NAO reproduz o conjunto
+# usado no relatorio. O que ficou em disco (shots_all.npz) foi baixado em
+# 03/07/2026: 99.746 finalizacoes, 3.961 partidas, 80 competicoes-temporada,
+# taxa de gol 10,26%. Para reproduzir exatamente, troque `master` pelo SHA do
+# commit daquela data; para atualizar de proposito, mantenha `master` e refaca
+# todos os experimentos, porque os numeros mudam.
 BASE = "https://raw.githubusercontent.com/statsbomb/open-data/master/data"
 S = requests.Session()
 
