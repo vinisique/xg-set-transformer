@@ -94,3 +94,58 @@ número não sustenta afirmação nenhuma.
 - Você decidir o cartão `0001` (métrica de decisão).
 - Você decidir o que fazer com a Copa de 2026.
 - Eu escrever o cartão `0002` (contrato de persistência) e o walkthrough do modelo.
+
+---
+
+## 2026-08-14 — Sessão final: fechamento do EXP-013 e do relatório
+
+### O que aconteceu
+
+**EXP-013 terminou e afastou a suspeita.** Remover a ReLU terminal do Deep Sets
+não o aproximou do Transformer — piorou-o, com 3 de 3 sementes na mesma direção.
+Era o experimento com maior potencial de derrubar a conclusão central; a
+conclusão sobreviveu a um teste que poderia tê-la matado, que é a única forma
+honesta de uma conclusão ficar mais forte.
+
+**Um defeito do EXP-013 foi corrigido antes de o número entrar no relatório.** A
+primeira execução comparava uma combinação de 3 sementes contra as de 5 do
+EXP-004; parte da penalidade seria só a contagem de sementes. As combinações de
+referência foram refeitas com as mesmas 3. A diferença passou de +0,00015 para
++0,00012 — pequena, mas o número anterior estava medindo duas coisas.
+
+**EXP-012 e EXP-013 foram incorporados ao `artigo.tex`.** O parágrafo que dizia
+que o *hold-out* por competição "não foi conduzido" virou a
+Seção~*Generalização para uma competição não vista*. Resumo e *abstract* ganharam
+a frase correspondente.
+
+### Erro de ferramenta encontrado hoje
+
+O estimador de páginas subestimava o texto: o regex `%.*` que remove comentários
+também truncava a linha em cada `\%` — e o texto está cheio de `9,31\,\%`. Tudo
+depois do primeiro `\%` da linha sumia da contagem. As estimativas anteriores
+(14,1 páginas) estavam otimistas. Com `(?<!\)%` a estimativa foi para 15,2, e
+foi preciso cortar de verdade.
+
+Duas figuras saíram por redundância com as tabelas que já traziam os mesmos
+números com mais precisão: a calibração agregada por partida (EXP-006) e a
+distribuição *bootstrap* (EXP-004). Ambas continuam em
+`docs/experimentos/figuras/`. Estimativa final: **14,8 páginas** — apertado, e só
+o Overleaf decide.
+
+### Ferramentas promovidas a versionadas
+
+`checa_tex.py`, `checa_bib.py` e `paginas.py` viviam apenas no diretório temporário
+da sessão. São o que garante que o `.tex` compila, e sumiriam com a limpeza da
+máquina. Viraram `poc/checa_relatorio.py`, versionado, com três checagens novas:
+figuras referenciadas que não existem em disco, o falso positivo de `latin1` (a
+palavra aparecia no comentário que proíbe reinseri-la) e saída com código de erro.
+
+O `valida_numeros.py` passou a cobrir EXP-012 e EXP-013, e aprendeu a reconhecer
+a forma `0{,}251` que o LaTeX exige em modo matemático — sem isso, todo valor-*p*
+do texto era reportado como divergência.
+
+### Pendente — só você pode fazer
+
+**Compilar no Overleaf** (`xg-set-transformer-relatorio.zip`, em `Downloads`):
+pdfLaTeX → BibTeX → pdfLaTeX ×2. Se passar de 15 páginas, o primeiro corte
+sugerido é a figura de calibração do EXP-000.

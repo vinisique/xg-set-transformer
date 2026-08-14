@@ -715,3 +715,121 @@ Fica de fora um teste mais duro que não foi feito: **hold-out por competição*
 treinar sem a Eurocopa 2024 e avaliar nela. Os subgrupos aqui vêm do mesmo
 conjunto de 80 competições-temporada, então medem robustez interna, não
 generalização para um torneio não visto.
+
+---
+
+## EXP-012 — hold-out por competição: o modelo generaliza para o que nunca viu?
+
+- **Data:** 2026-08-11 · **Script:** `poc/exp012_holdout.py`
+- **Motivo:** todos os testes anteriores usam partidas **sorteadas** do mesmo
+  conjunto de 80 competições-temporada. Isso mede robustez interna — garante que
+  o modelo não decorou partidas —, não que ele não decorou estilo de liga e de
+  época. O EXP-011 declarou essa lacuna explicitamente; aqui ela é fechada.
+- **Desenho:** a Premier League 2015/16 sai **inteira** de treino e validação e
+  vira o teste. 9.817 finalizações, 380 partidas, 914 gols. Uma asserção no
+  código verifica que nada vazou.
+- **Escolha da competição:** a Eurocopa 2024, com 1.304 chutes, daria intervalo
+  quase 4× mais largo, e o efeito medido (~0,0005 de Brier) sumiria dentro dele
+  **por construção, não por ausência**.
+
+### Resultado [medido]
+
+O Brier **não** é comparável entre os dois testes: a competição retirada tem
+9,31 % de gols contra 10,52 % do teste habitual, então qualquer modelo tem Brier
+mais baixo nela. A medida comparável é a perícia sobre a taxa média de gol,
+`1 − Brier / [p(1−p)]`.
+
+| Modelo | Perícia dentro | Perícia fora | AUC dentro | AUC fora |
+|---|---|---|---|---|
+| B1 | 12,49 % | 9,28 % | 0,7653 | 0,7553 |
+| B2 | 16,64 % | 13,08 % | 0,7961 | 0,7838 |
+| Deep Sets | 18,88 % | **15,23 %** | 0,8160 | 0,7981 |
+| Transformer | 19,47 % | **15,52 %** | 0,8162 | 0,7969 |
+
+**TF − DS:** −0,00024, IC 95 % [−0,00063; +0,00016], p = 0,251 → **não
+estabelecida** fora da distribuição.
+
+**Calibração agregada:** xG somado de 908,7 contra 914 gols — viés de **−0,6 %**,
+*melhor* que o +1,3 % obtido dentro da distribuição.
+
+![Hold-out por competição](figuras/EXP-012-holdout.png)
+
+## Leitura
+
+**Todos os modelos perdem cerca de um quinto da perícia**, e perdem em proporção
+semelhante — nenhuma arquitetura é especialmente frágil, mas os números das
+seções anteriores são otimistas para uma liga-temporada nova.
+
+**A calibração agregada, porém, não se degrada.** O modelo perde a capacidade de
+*ordenar* finalizações de uma liga desconhecida e mantém a de estimar *quanto*
+vale o conjunto delas — que é como o xG costuma ser usado na prática.
+
+**A vantagem do Transformer não se sustenta fora da distribuição.** Duas leituras
+são compatíveis e o experimento não decide entre elas: o efeito encolheu (de
+−0,00056 para −0,00024) ou o teste perdeu poder (9.817 chutes contra 14.935).
+As duas vão para o relatório; escolher a conveniente seria desonesto.
+
+### Limitação declarada
+
+O Transformer foi treinado com **2 sementes, não 3**: a máquina suspendia durante
+a madrugada e o tempo de parede inviabilizou a terceira. É a única assimetria de
+protocolo do trabalho, e ela favorece o Deep Sets — ou seja, não é uma assimetria
+que ajude a conclusão que o trabalho defende.
+
+---
+
+## EXP-013 — a diferença é a atenção ou a ReLU terminal do Deep Sets?
+
+- **Data:** 2026-08-11 · **Script:** `poc/exp013_relu_terminal.py`
+- **Motivo:** suspeita levantada na revisão, e é uma suspeita séria. O `phi` do
+  Deep Sets **termina em ReLU**: toda representação por jogador é não-negativa, a
+  média e o máximo agregam só valores ≥ 0, e a cabeça linear recebe um vetor
+  preso ao ortante positivo. A saída do `[CLS]` vem do fluxo residual, com sinal
+  livre. Se fosse isso, a comparação estaria medindo "atenção **+ liberdade de
+  sinal**" — e o **EXP-008 não pegaria**, porque dobrar a dimensão não remove a
+  restrição.
+- **Desenho:** `DeepSetsSemReLU` é idêntico ao original **exceto** pela ReLU
+  final. Uma única alteração: se mudássemos duas coisas, o resultado não
+  atribuiria causa a nenhuma delas. Mesmos **10.273 parâmetros** (verificado no
+  próprio script), mesmas 3 sementes.
+
+### Correção aplicada durante o experimento
+
+A primeira execução comparava a combinação de **3** sementes contra as
+combinações de **5** do EXP-004 — parte da penalidade medida seria só o número de
+sementes, que favorece a combinação maior. As combinações de referência foram
+refeitas com as **mesmas 3 sementes**, para que a única diferença continuasse
+sendo a ReLU.
+
+### Resultado [medido]
+
+| Modelo | Brier (média ± dp) | AUC (média ± dp) |
+|---|---|---|
+| DS original | 0,07654 ± 0,00002 | **0,8145** ± 0,0002 |
+| DS sem ReLU terminal | 0,07664 ± 0,00008 | 0,8131 ± 0,0005 |
+| TF | **0,07621** ± 0,00004 | 0,8147 ± 0,0004 |
+
+| Comparação | Diferença | IC 95 % | p |
+|---|---|---|---|
+| TF − DS sem ReLU | −0,00067 | [−0,00095; −0,00040] | 0,000 |
+| DS sem ReLU − DS original | +0,00012 | [−0,00008; +0,00032] | 0,245 |
+
+![ReLU terminal](figuras/EXP-013-relu.png)
+
+## Leitura — a suspeita foi afastada
+
+**Remover a ReLU não aproximou o Deep Sets do Transformer: piorou-o.** O Brier
+sobe, a AUC cai, e as **3 de 3 sementes** vão na mesma direção nas duas métricas.
+A diferença entre as combinações não é estatisticamente distinguível de zero
+(p = 0,245), mas não há o menor indício de ganho — e era ganho que a hipótese
+previa.
+
+Contra o Transformer, a vantagem **permanece** com intervalo estritamente
+negativo (−0,00067). A restrição de sinal não explica a diferença entre as
+arquiteturas.
+
+Este era o experimento com maior potencial de derrubar a conclusão central do
+trabalho: se o Deep Sets sem ReLU alcançasse o Transformer, o que a escada
+atribui à atenção seria, em parte, artefato de arquitetura. Não alcançou. **A
+comparação TF vs DS fica mais sólida do que estava** — não porque o resultado
+foi o desejado, mas porque a explicação alternativa foi testada e falhou.

@@ -38,6 +38,9 @@ def formas(valor, casas):
     """Formas aceitaveis do numero no texto, incluindo separador de milhar."""
     base = br(valor, casas)
     saida = {base}
+    # em modo matematico a virgula decimal e escrita 0{,}251, para que o LaTeX
+    # nao a trate como separador de lista e insira espaco depois dela
+    saida.add(base.replace(",", "{,}"))
     if casas == 0 and abs(valor) >= 1000:                 # 14935 -> 14.935
         saida.add(f"{int(abs(valor)):,}".replace(",", "."))
     return saida
@@ -167,6 +170,59 @@ if e11:
     for nome, g in e11["subgrupos"].items():
         confere(f"EXP-011 {nome} dif", g["diferenca"], 5, "EXP-011-completo.json")
         confere(f"EXP-011 {nome} n", g["n"], 0, "EXP-011-completo.json")
+
+# --------------------------------------------------- EXP-012 (hold-out) ----
+e12 = carrega("EXP-012-completo.json")
+if e12:
+    confere("EXP-012 n teste", e12["n_teste"], 0, "EXP-012-completo.json")
+    confere("EXP-012 gols", e12["gols"], 0, "EXP-012-completo.json")
+    confere("EXP-012 n partidas", e12["n_partidas"], 0, "EXP-012-completo.json")
+    for k, m in e12["modelos"].items():
+        confere(f"EXP-012 {k} AUC fora", m["auc"], 4, "EXP-012-completo.json")
+        # o Brier bruto nao vai para o texto: nao e comparavel entre conjuntos
+        # com taxas de gol diferentes. O texto cita a pericia, conferida abaixo.
+        confere(f"EXP-012 {k} Brier fora", m["brier"], 5,
+                "EXP-012-completo.json", False)
+    tp = e12["teste_pareado"]
+    confere("EXP-012 dif TF-DS", tp["diferenca"], 5, "EXP-012-completo.json")
+    confere("EXP-012 IC inf", tp["ic95"][0], 5, "EXP-012-completo.json")
+    confere("EXP-012 IC sup", tp["ic95"][1], 5, "EXP-012-completo.json")
+    confere("EXP-012 p", tp["p_bilateral"], 3, "EXP-012-completo.json")
+    confere("EXP-012 vies agregado %", abs(e12["vies_agregado_pct"]), 1,
+            "EXP-012-completo.json")
+    confere("EXP-012 xG total TF",
+            e12["gols"] * (1 + e12["vies_agregado_pct"] / 100), 1,
+            "EXP-012-completo.json")
+    # pericia = 1 - Brier / [p(1-p)], a medida comparavel entre os dois testes
+    p_fora = e12["gols"] / e12["n_teste"]
+    ref_fora = p_fora * (1 - p_fora)
+    confere("EXP-012 taxa de gol fora %", p_fora * 100, 2, "EXP-012-completo.json")
+    if e10:
+        DENTRO = {"B1": "B1 · logística", "B2": "B2 · logística + interação",
+                  "DS": "DS · Deep Sets (tokens)", "TF": "TF · Transformer (tokens)"}
+        # a taxa de gol do teste habitual vem do proprio EXP-010 (mesmo conjunto)
+        for k, rot in DENTRO.items():
+            pericia = (1 - e12["modelos"][k]["brier"] / ref_fora) * 100
+            confere(f"EXP-012 {k} perícia fora", pericia, 1, "EXP-012-completo.json")
+
+# ------------------------------------------------- EXP-013 (ReLU final) -----
+e13 = carrega("EXP-013-completo.json")
+if e13:
+    import statistics as st13
+    for k, ms in e13["por_seed"].items():
+        # o texto cita as medias do Deep Sets nas duas versoes; a do Transformer
+        # com 3 sementes nao vai ao texto para nao conflitar com a de 5 sementes
+        exigido = k != "TF"
+        confere(f"EXP-013 {k} Brier", st13.mean(m["brier"] for m in ms), 5,
+                "EXP-013-completo.json", exigido)
+        confere(f"EXP-013 {k} AUC", st13.mean(m["auc"] for m in ms), 4,
+                "EXP-013-completo.json", exigido)
+    for k, v in e13["parametros"].items():
+        confere(f"EXP-013 parametros {k}", v, 0, "EXP-013-completo.json")
+    for rot, tt in e13["testes_pareados"].items():
+        confere(f"EXP-013 dif {rot}", tt["diferenca"], 5, "EXP-013-completo.json")
+        confere(f"EXP-013 IC inf {rot}", tt["ic95"][0], 5, "EXP-013-completo.json")
+        confere(f"EXP-013 IC sup {rot}", tt["ic95"][1], 5, "EXP-013-completo.json")
 
 # ------------------------------------------------------------- resultado ----
 print(f"conferidos com sucesso: {ok}")

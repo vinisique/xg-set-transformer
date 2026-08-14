@@ -36,7 +36,9 @@ RAIZ = os.path.dirname(AQUI)
 DIR_EXP = os.path.join(RAIZ, "experiments", "EXP-013")
 os.makedirs(DIR_EXP, exist_ok=True)
 CACHE = os.path.join(DIR_EXP, "predicoes.npz")
-SEEDS = (0, 1, 2, 3, 4)
+# 3 sementes, nao 5: a pergunta e qualitativa (a ReLU limita ou nao) e o prazo
+# nao comporta mais. Se o resultado ficar ambiguo, ampliamos.
+SEEDS = (0, 1, 2)
 
 
 class DeepSetsSemReLU(nn.Module):
@@ -96,14 +98,20 @@ ens = np.mean(preds, axis=0)
 e4 = np.load(os.path.join(RAIZ, "experiments", "EXP-004", "predicoes.npz"))
 assert np.array_equal(e4["y"], y_te)
 
+# As combinacoes do EXP-004 salvas em disco usam 5 sementes; esta e treinada com
+# 3. Comparar 3 contra 5 mediria tambem o numero de sementes, e a combinacao de
+# 5 leva vantagem por construcao. Aqui as combinacoes de referencia sao refeitas
+# com as MESMAS 3 sementes, para que a unica diferenca continue sendo a ReLU.
+ens_ds3 = np.mean([e4[f"DS_seed{s}"] for s in SEEDS], axis=0)
+ens_tf3 = np.mean([e4[f"TF_seed{s}"] for s in SEEDS], axis=0)
+
 import statistics as st
 por_seed = {
     "DS original": [xb.metricas(y_te, e4[f"DS_seed{s}"]) for s in SEEDS],
     "DS sem ReLU terminal": [xb.metricas(y_te, p) for p in preds],
     "TF": [xb.metricas(y_te, e4[f"TF_seed{s}"]) for s in SEEDS],
 }
-ENS = {"DS original": e4["DS_ensemble"], "DS sem ReLU terminal": ens,
-       "TF": e4["TF_ensemble"]}
+ENS = {"DS original": ens_ds3, "DS sem ReLU terminal": ens, "TF": ens_tf3}
 
 print(f"\n{'modelo':24s} {'Brier (média±dp)':>22s} {'AUC (média±dp)':>20s}")
 for k, ms in por_seed.items():
@@ -163,7 +171,7 @@ axs[0].annotate("única diferença entre as duas versões do Deep Sets: a ReLU f
                 xytext=(0, 8), fontsize=8.5, color=viz.COR["tinta_2"])
 fig.suptitle("EXP-013 · o Deep Sets estava limitado pela ReLU terminal?",
              x=0.0, ha="left", fontsize=13, fontweight="bold", color=viz.COR["tinta"])
-viz.rodape(fig, f"EXP-013 · 5 sementes por modelo · teste = {len(y_te)} chutes · "
+viz.rodape(fig, f"EXP-013 · {len(SEEDS)} sementes por modelo · teste = {len(y_te)} chutes · "
                 f"as duas versões do Deep Sets têm os mesmos {n_orig:,} parâmetros."
            .replace(",", "."))
 fig.tight_layout(rect=[0, 0, 1, 0.90])

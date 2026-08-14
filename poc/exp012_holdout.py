@@ -33,7 +33,10 @@ os.makedirs(DIR_EXP, exist_ok=True)
 CACHE = os.path.join(DIR_EXP, "predicoes.npz")
 
 FORA = "Premier League 2015/2016"
-SEEDS = (0, 1, 2)
+# Sementes efetivamente treinadas. O Transformer ficou com 2 em vez de 3: a
+# maquina suspendia durante a noite e o tempo de parede inviabilizou a terceira.
+# A limitacao e declarada no relatorio em vez de silenciada.
+SEEDS_POR_MODELO = {"DS": (0, 1, 2), "TF": (0, 1)}
 
 D = xb.carrega(os.path.join(AQUI, "shots_all.npz"))
 
@@ -68,7 +71,7 @@ if os.path.exists(CACHE):
 
 preds = {"DS": [], "TF": []}
 for chave, classe in (("DS", xb.DeepSets), ("TF", xb.Former)):
-    for s in SEEDS:
+    for s in SEEDS_POR_MODELO[chave]:
         nome = f"{chave}_seed{s}"
         if nome in guardado:
             p = guardado[nome]
@@ -110,7 +113,8 @@ vies = (somas.sum() / gols.sum() - 1) * 100
 print(f"calibração agregada: xG {somas.sum():.1f} contra {int(gols.sum())} gols "
       f"({vies:+.1f}%)")
 
-json.dump({"id": "EXP-012", "competicao_fora": FORA, "seeds": list(SEEDS),
+json.dump({"id": "EXP-012", "competicao_fora": FORA,
+           "sementes": {k: list(v) for k, v in SEEDS_POR_MODELO.items()},
            "n_teste": int(D["te"].sum()), "gols": int(y_te.sum()),
            "n_partidas": int(len(np.unique(partidas_te))),
            "modelos": res,
@@ -151,6 +155,6 @@ axs[0].annotate("cinza = teste habitual (partidas sorteadas) · "
 fig.suptitle(f"EXP-012 · generalização para uma competição inteira fora do treino",
              x=0.0, ha="left", fontsize=13, fontweight="bold", color=viz.COR["tinta"])
 viz.rodape(fig, f"EXP-012 · fora do treino: {FORA} · {int(D['te'].sum())} chutes em "
-                f"{len(np.unique(partidas_te))} partidas · neurais: 3 sementes.")
+                f"{len(np.unique(partidas_te))} partidas · Deep Sets 3 sementes, Transformer 2.")
 fig.tight_layout(rect=[0, 0, 1, 0.90])
 viz.salvar(fig, os.path.join(DIR_FIG, "EXP-012-holdout.png"))

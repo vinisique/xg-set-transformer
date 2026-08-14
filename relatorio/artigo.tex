@@ -46,7 +46,11 @@ shows the model \emph{weighting} that cue, not rediscovering the geometry. A
 causal ablation confirms dependence: blocking the model from attending to
 blockers degrades Brier 7.9$\times$ more than suppressing the same number of
 random players. A capacity-matched Deep Sets (38{,}977 parameters) does not
-reproduce the gain, ruling out model size as the explanation.
+reproduce the gain, ruling out model size as the explanation. Under a
+competition-level hold-out (Premier League 2015/16, entirely unseen), every
+model loses about one fifth of its skill and the attention advantage is no
+longer established ($p = 0.251$), while aggregate calibration stays within
+$-$0.6\%.
 \end{abstract}
 
 \begin{resumo}
@@ -68,7 +72,10 @@ geometria. Uma ablação causal confirma a dependência: proibir o modelo de
 observar os bloqueadores degrada o Brier 7,9 vezes mais do que suprimir a mesma
 quantidade de jogadores sorteados. Um Deep Sets com capacidade equiparada
 (38.977 parâmetros) não reproduz o ganho, o que afasta a explicação por
-tamanho.
+tamanho. Sob \emph{hold-out} por competição (Premier League 2015/16,
+inteiramente fora do treino), todos os modelos perdem cerca de um quinto da
+perícia e a vantagem da atenção deixa de ser estabelecida ($p = 0{,}251$),
+enquanto a calibração agregada se mantém em $-$0,6\,\%.
 \end{resumo}
 
 % =====================================================================
@@ -393,22 +400,14 @@ O teste mais próximo do uso real da métrica não é por finalização, e sim p
 partida: somando o xG previsto de todos os chutes de um jogo, o total corresponde
 aos gols efetivamente marcados?
 
-\begin{figure}[ht]
-\centering
-\includegraphics[width=0.72\textwidth]{figuras/EXP-006-agregada.png}
-\caption{Calibração agregada. Cada ponto é uma das 595 partidas do conjunto de
-teste; a linha escura é a média de gols observados por faixa de xG previsto.}
-\label{fig:agregada}
-\end{figure}
-
 Sobre as 595 partidas de teste, o Transformer prevê \textbf{1591,2} de xG total
 contra \textbf{1571} gols observados -- viés de \textbf{+1,3\,\%}. O Deep Sets
 fica em +1,5\,\%. O erro médio de 1,16 gol \emph{por partida} não indica falha do
 modelo: uma partida tem poucos gols e forte componente aleatório, e é
-precisamente por isso que o xG é uma métrica de agregação. A
-Figura~\ref{fig:agregada} mostra o padrão esperado -- a média por faixa acompanha
-a diagonal na região densa e regride ao centro nos extremos, onde há poucas
-partidas.
+precisamente por isso que o xG é uma métrica de agregação. O diagrama por
+partida, disponível no repositório, mostra o padrão esperado: a média por faixa
+acompanha a diagonal na região densa e regride ao centro nos extremos, onde há
+poucas partidas.
 
 \subsection{A atenção acrescenta algo? (questão central)}
 
@@ -441,16 +440,8 @@ valor-\emph{p} & $<$ 0,001 & 0,797 \\
 \end{tabular}
 \end{table}
 
-\begin{figure}[ht]
-\centering
-\includegraphics[width=0.82\textwidth]{figuras/EXP-004-bootstrap.png}
-\caption{Distribuição \emph{bootstrap} da diferença de Brier. As 2.000 reamostras
-situam-se integralmente à esquerda de zero.}
-\label{fig:boot}
-\end{figure}
-
-A Tabela~\ref{tab:central} e a Figura~\ref{fig:boot} apresentam o resultado, que é
-uma dissociação limpa entre as duas métricas:
+A Tabela~\ref{tab:central} apresenta o resultado, que é uma dissociação limpa
+entre as duas métricas:
 
 \begin{quote}
 \textbf{A atenção par a par melhora a qualidade da probabilidade, mas não a
@@ -534,6 +525,26 @@ Há ainda um achado próprio: \textbf{ampliar a capacidade do Deep Sets o piora}
 atenção, os parâmetros adicionais não encontram estrutura a explorar e o modelo
 sobreajusta.
 
+\subsubsection*{Tampouco é a ReLU terminal do Deep Sets}
+
+Resta uma explicação arquitetural que não envolve atenção. O $\phi$ do Deep Sets
+\emph{termina} em ReLU, de modo que toda representação por jogador é não
+negativa e a cabeça linear recebe um vetor restrito ao ortante positivo; a saída
+do \texttt{[CLS]} vem do fluxo residual e tem sinal livre. Se fosse essa a
+origem da diferença, a comparação estaria medindo ``atenção mais liberdade de
+sinal'' -- e o controle de capacidade não a detectaria, pois ampliar a dimensão
+não remove a restrição. Treinou-se então um Deep Sets idêntico \emph{exceto}
+pela remoção dessa ReLU, com os mesmos 10.273 parâmetros e as mesmas três
+sementes, usadas também para refazer as combinações de referência.
+
+\textbf{A remoção não aproximou o Deep Sets do Transformer: piorou-o.} O Brier
+médio passa de 0,07654 para 0,07664 e a AUC cai de 0,8145 para 0,8131, com as
+três sementes na mesma direção nas duas métricas. Entre as combinações, a
+diferença de Brier é de $+$0,00012, IC [$-$0,00008; $+$0,00032] -- sem indício
+de ganho --, enquanto a vantagem do Transformer permanece com intervalo
+estritamente negativo ($-$0,00067, IC [$-$0,00095; $-$0,00040]). A restrição de
+sinal não explica a diferença entre as arquiteturas.
+
 \subsubsection*{A conclusão vale em todos os recortes}
 
 A vantagem do Transformer foi reavaliada em quatro subconjuntos do teste, e em
@@ -542,10 +553,60 @@ finalizações), futebol masculino ($-$0,00043, 10.492), temporadas 2015/16
 ($-$0,00053, 6.070) e demais competições ($-$0,00058, 8.865). O efeito é cerca de
 duas vezes maior no futebol feminino, o que se registra sem investigar.
 
-Cabe a ressalva de que os quatro recortes provêm do mesmo conjunto de 80
-competições-temporada. Eles medem robustez interna, não generalização para um
-torneio não observado -- para isso seria necessário um \emph{hold-out} por
-competição, que não foi conduzido.
+\subsection{Generalização para uma competição não vista}\label{sec:holdout}
+
+Os quatro recortes acima provêm do mesmo conjunto de 80 competições-temporada:
+medem robustez interna, não generalização para um torneio não observado. Para
+medir esta última, a \emph{Premier League} 2015/16 foi retirada por inteiro do
+treino e da validação e usada como teste -- 9.817 finalizações em 380 partidas,
+com 914 gols --, com asserção no código de que nada vazou.
+
+O Brier não é comparável entre os dois testes, porque depende da taxa de gol do
+conjunto: a competição retirada tem 9,31\,\% de gols contra 10,52\,\% do teste
+habitual, de modo que qualquer modelo obtém Brier mais baixo nela. A comparação
+usa portanto a \textbf{perícia} sobre a taxa média de gol,
+$1 - \mathrm{Brier}/[p(1-p)]$, que é adimensional.
+
+\begin{table}[ht]
+\centering
+\caption{Generalização para a \emph{Premier League} 2015/16, inteiramente fora
+do treino. ``Dentro'' é o teste habitual, de partidas sorteadas.}
+\label{tab:holdout}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+ & \multicolumn{2}{c}{Perícia} & \multicolumn{2}{c}{AUC} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+Modelo & Dentro & Fora & Dentro & Fora \\
+\midrule
+B1 & 12,5\,\% & 9,3\,\% & 0,7653 & 0,7553 \\
+B2 & 16,6\,\% & 13,1\,\% & 0,7961 & 0,7838 \\
+Deep Sets & 18,9\,\% & 15,2\,\% & 0,8160 & 0,7981 \\
+Transformer & \textbf{19,5\,\%} & \textbf{15,5\,\%} & \textbf{0,8162} & 0,7969 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A Tabela~\ref{tab:holdout} sustenta três leituras.
+
+Primeira, \textbf{todos os modelos perdem cerca de um quinto da perícia} fora da
+distribuição, e em proporção semelhante: nenhuma arquitetura se mostra
+especialmente frágil, mas os números das seções anteriores são otimistas para
+uma liga-temporada nova.
+
+Segunda, \textbf{a calibração agregada não se degrada}. O xG somado do
+Transformer é de 908,7 contra 914 gols observados -- viés de $-$0,6\,\%, melhor
+do que o $+$1,3\,\% obtido dentro da distribuição. O modelo perde capacidade de
+\emph{ordenar} finalizações de uma liga que não viu, e mantém a de estimar
+\emph{quanto} vale o conjunto delas, que é o uso mais comum do xG.
+
+Terceira, \textbf{a vantagem do Transformer não se sustenta fora da
+distribuição}: $-$0,00024, IC [$-$0,00063; $+$0,00016], $p = 0{,}251$. Duas
+explicações são compatíveis, e este trabalho não decide entre elas: o efeito
+pode ter encolhido (de $-$0,00056 para $-$0,00024) ou o teste pode ter perdido
+poder, já que 9.817 finalizações são dois terços das 14.935 do teste habitual.
+Registre-se que aqui o Transformer foi treinado com duas sementes e não três --
+a máquina suspendia durante a madrugada e o tempo de parede inviabilizou a
+terceira. É a única assimetria de protocolo do trabalho, e favorece o Deep Sets.
 
 \subsection{O que a atenção está olhando}
 
