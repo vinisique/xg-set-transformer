@@ -53,3 +53,8 @@ modelosparapublicaodeartigos/
 *.out
 *.dvi
 *.synctex.gz
+
+# PDFs baixados do Overleaf caem na raiz com nome gerado pelo titulo do artigo.
+# A versao entregue e relatorio/artigo.pdf; manter copias soltas confunde quem
+# clona, porque nao da para saber qual e a atual.
+O_jogador_como_token*.pdf
