@@ -91,13 +91,20 @@ larguras = [float(x) if x else 1.0 for x in
 texto = palavras / 450.0
 figuras = sum(0.42 * w for w in larguras)
 tabelas = ab["table"] * 0.18
-total = texto + figuras + tabelas + 1.0 + 0.8   # + titulo/resumos + referencias
+bruto = texto + figuras + tabelas + 1.0 + 0.8   # + titulo/resumos + referencias
+
+# Calibracao medida contra o PDF real (Overleaf, 14/08/2026): a soma acima deu
+# 14,9 para um PDF de 16 paginas. A conta ignora o espaco em branco que o LaTeX
+# deixa ao empurrar floats para a proxima pagina e as quebras de secao, e por
+# isso subestima. Sem esta correcao o script aprova um artigo que estoura.
+FOLGA = 1.1
+total = bruto + FOLGA
 
 print(f"\nestimativa de paginas (SBC 12pt A4, ~450 palavras/pagina):")
 print(f"  texto {texto:5.1f} | figuras {figuras:4.1f} | tabelas {tabelas:4.1f} "
-      f"| titulo+resumos 1.0 | referencias 0.8")
+      f"| titulo+resumos 1.0 | referencias 0.8 | folga de diagramacao {FOLGA}")
 print(f"  TOTAL {total:5.1f}  (limite 15)  -> "
-      + ("folga confortavel" if total < 13 else
+      + ("folga confortavel" if total < 14 else
          "apertado, conferir no Overleaf" if total <= 15 else "PASSOU DO LIMITE"))
 if total > 15:
     problemas.append(f"estimativa de {total:.1f} paginas acima do limite")

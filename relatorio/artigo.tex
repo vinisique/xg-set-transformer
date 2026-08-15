@@ -248,14 +248,12 @@ perpendicular em relação à linha chutador--gol), enquanto aquele trabalho usa
 indicador binário -- uma generalização do atributo consagrado.
 
 Três atributos da literatura ficaram \textbf{de fora} do B2, e a omissão é
-declarada: o \emph{padrão de jogo} (bola rolando, escanteio, falta), o
-\emph{tipo de ação anterior} e o ``melhor ângulo'' livre de
+declarada: o \emph{padrão de jogo}, o \emph{tipo de ação anterior} e o ``melhor
+ângulo'' livre de
 obstrução~\cite{iapteff2025interpretable,mead2023expected,lucey2015quality}.
-Pênaltis foram excluídos da base, o que remove a principal fonte de
-heterogeneidade de situação. Como o B2 é um \emph{baseline} de comparação e não a
-contribuição do trabalho, optou-se por mantê-lo alinhado ao conjunto de atributos
-puramente geométricos, que é o mesmo espaço de informação disponível aos modelos
-neurais -- caso contrário a comparação deixaria de ser justa.
+Manteve-se o B2 restrito aos atributos puramente geométricos porque esse é o
+mesmo espaço de informação disponível aos modelos neurais -- caso contrário a
+comparação deixaria de ser justa.
 
 A comparação decisiva na Tabela~\ref{tab:escada} é \textbf{TF contra DS}: ambos
 recebem exatamente os mesmos tokens, e apenas o Transformer pode comparar
@@ -314,17 +312,7 @@ TF -- Transformer (tokens) & \textbf{0,8162} & \textbf{0,07579} & 0,0043 \\
 \end{tabular}
 \end{table}
 
-\begin{figure}[ht]
-\centering
-\includegraphics[width=0.92\textwidth]{figuras/EXP-010-nao-linear.png}
-\caption{Desempenho dos cinco modelos. Optou-se por marcadores em vez de barras
-porque as AUCs ocupam a faixa estreita entre 0,76 e 0,82: barras a partir da
-origem tornariam as diferenças invisíveis, e barras truncadas distorceriam a
-proporção.}
-\label{fig:escada}
-\end{figure}
-
-A Figura~\ref{fig:escada} torna o padrão visível. Fornecer a cena inteira ao
+O padrão é direto: fornecer a cena inteira ao
 modelo supera resumi-la em atributos manuais -- mas \textbf{menos do que a
 comparação com o B2 linear sugere}. O B2-GBM, que usa exatamente os mesmos sete
 atributos manuais e difere apenas na classe de modelo, alcança AUC 0,8069 e Brier
@@ -347,15 +335,8 @@ que os modelos neurais. Estes apresentam Brier melhor e calibração pior.
 Não há contradição. O Brier decompõe-se em \emph{calibração} -- as probabilidades
 correspondem às frequências observadas? -- e \emph{refinamento} -- o modelo separa
 bem os casos? Os modelos neurais vencem no refinamento e perdem na calibração, com
-saldo positivo. A Figura~\ref{fig:calib} mostra as quatro curvas.
-
-\begin{figure}[ht]
-\centering
-\includegraphics[width=0.80\textwidth]{figuras/EXP-000-calibracao.png}
-\caption{Curva de calibração e Brier \emph{score}. À esquerda, a frequência
-observada de gol contra o xG previsto, por decil.}
-\label{fig:calib}
-\end{figure}
+saldo positivo. As curvas de confiabilidade dos quatro modelos estão no
+repositório.
 
 \subsubsection*{A recalibração não ajuda}
 
@@ -634,17 +615,9 @@ Companheiro & 0,75$\times$ & 0,74$\times$ \\
 \end{tabular}
 \end{table}
 
-\begin{figure}[ht]
-\centering
-\includegraphics[width=0.74\textwidth]{figuras/EXP-005-atencao-papeis.png}
-\caption{Para quem o token \texttt{[CLS]} olha. A linha vertical marca a atenção
-que um jogador receberia por acaso.}
-\label{fig:atencao}
-\end{figure}
-
-O ordenamento da Tabela~\ref{tab:atencao}, visível na Figura~\ref{fig:atencao}
--- bloqueador, goleiro, adversário distante, companheiro -- reproduz a hierarquia
-que a literatura de xG codifica manualmente.
+O ordenamento da Tabela~\ref{tab:atencao} -- bloqueador, goleiro, adversário
+distante, companheiro -- reproduz a hierarquia que a literatura de xG codifica
+manualmente.
 
 \textbf{É preciso ser preciso sobre o que isso demonstra.} Como declarado na
 Seção 2.2, o indicador ``dentro do triângulo do chute'' \textbf{é um atributo de
@@ -665,8 +638,8 @@ atenção se concentra, não que dela decorra o ganho em Brier. Os pesos da segu
 camada operam sobre representações já contextualizadas, de modo que ``atenção
 alta'' não equivale a ``importância'' -- ponto amplamente discutido na literatura
 sobre atenção como explicação. E os valores provêm de \textbf{uma única semente},
-com média sobre 2 camadas e 4 cabeças, o que pode cancelar papéis distintos. A
-média sobre 2 camadas e 4 cabeças pode cancelar papéis distintos entre elas.
+com média sobre 2 camadas e 4 cabeças, o que pode cancelar papéis distintos entre
+elas.
 
 \subsubsection*{Ablação causal}
 
