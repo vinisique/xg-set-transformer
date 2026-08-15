@@ -58,3 +58,8 @@ modelosparapublicaodeartigos/
 # A versao entregue e relatorio/artigo.pdf; manter copias soltas confunde quem
 # clona, porque nao da para saber qual e a atual.
 O_jogador_como_token*.pdf
+
+# PDF da proposta gerado por gera_proposta_pdf.py a partir de
+# proposta_entrega1.md. E byte a byte igual ao Proposta_entrega1_enviado.pdf,
+# que fica versionado porque o nome registra qual documento foi submetido.
+proposta_entrega1.pdf
