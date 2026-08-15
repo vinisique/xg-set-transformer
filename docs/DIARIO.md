@@ -149,3 +149,24 @@ do texto era reportado como divergência.
 **Compilar no Overleaf** (`xg-set-transformer-relatorio.zip`, em `Downloads`):
 pdfLaTeX → BibTeX → pdfLaTeX ×2. Se passar de 15 páginas, o primeiro corte
 sugerido é a figura de calibração do EXP-000.
+
+### Fecho do dia — compilação
+
+Primeira compilação: **16 páginas**, uma acima do limite. A causa raiz não foi o
+texto, foi a ferramenta: o estimador dava 14,9 para esse mesmo documento. Ele
+soma texto, figuras e tabelas, mas ignora o branco que o LaTeX deixa ao empurrar
+*float* para a página seguinte. Corrigido com a folga de 1,1 página medida contra
+o PDF real — sem isso o script continuaria aprovando artigos que estouram.
+
+Saíram três figuras, todas pelo mesmo critério já usado antes: **reproduziam uma
+tabela que trazia os mesmos números com mais precisão** (escada → Tabela 2,
+atenção por papel → Tabela 7, curvas de calibração → Tabelas 2 e 3). Ficaram as
+duas que nenhuma tabela substitui: a arquitetura e os três casos da Eurocopa.
+
+Achado de brinde na leitura do PDF: uma **frase duplicada** na Seção 3.6, sobra de
+edição anterior. Só apareceu porque o PDF foi lido inteiro — nenhum dos
+verificadores automáticos pega repetição de conteúdo.
+
+Segunda compilação: **15 páginas**, no limite. Figuras e tabelas renumeradas sem
+referência quebrada, nenhum `??`, bibliografia completa. `relatorio/artigo.pdf` é
+a versão entregue.
